@@ -56,9 +56,13 @@ def get_split_df(df: pd.DataFrame, dataset: str, split: str) -> pd.DataFrame:
         crf = dataset.split('-')[1]
         random_youtube_videos = np.random.permutation(
             df[(df['source'] == 'youtube') & (df['quality'] == crf)]['video'].unique())
+        
         train_orig = random_youtube_videos[:300]
         val_orig = random_youtube_videos[300:300 + 100]
         test_orig = random_youtube_videos[300 + 100:]
+        output_file = "/content/drive/MyDrive/KLTN/selected_youtube_videos.txt"
+        np.savetxt(output_file, random_youtube_videos, fmt="%s")
+        print(f"Danh sách video đã lấy được lưu vào: {output_file}")
         if split == 'train':
             split_df = pd.concat((df[df['original'].isin(train_orig)], df[df['video'].isin(train_orig)]), axis=0)
         elif split == 'val':

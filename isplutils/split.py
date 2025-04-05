@@ -63,12 +63,6 @@ def get_split_df(df: pd.DataFrame, dataset: str, split: str) -> pd.DataFrame:
         output_file = "/content/drive/MyDrive/KLTN/selected_youtube_videos.txt"  
         np.savetxt(output_file, random_youtube_videos, fmt="%s")
         print(f"Danh sách video đã lấy được lưu vào: {output_file}")
-        output_file_1 = "/content/drive/MyDrive/KLTN/train_orig.txt"  
-        np.savetxt(output_file_1, train_orig, fmt="%s")
-        print(f"Danh sách video đã lấy được lưu vào: {output_file_1}")
-        output_file_2 = "/content/drive/MyDrive/KLTN/val_orig.txt"  
-        np.savetxt(output_file_2, val_orig, fmt="%s")
-        print(f"Danh sách video đã lấy được lưu vào: {output_file_2}")
         if split == 'train':
             split_df = pd.concat((df[df['original'].isin(train_orig)], df[df['video'].isin(train_orig)]), axis=0)
         elif split == 'val':

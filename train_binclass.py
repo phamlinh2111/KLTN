@@ -230,6 +230,7 @@ def main():
     val_roots = [splits['val'][db][1] for db in splits['val']]
     val_dfs = [splits['val'][db][0] for db in splits['val']]
 
+    print("hi")
     train_dataset = FrameFaceIterableDataset(roots=train_roots,
                                              dfs=train_dfs,
                                              scale=face_policy,

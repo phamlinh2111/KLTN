@@ -141,24 +141,32 @@ class FrameFaceIterableDataset(IterableDataset):
             self.labels_map = dict(self.labels_map)
 
     def _get_face(self, item: pd.Index) -> (torch.Tensor, torch.Tensor) or (torch.Tensor, torch.Tensor, str):
-
         print("item:", item)
         print("self.dfs[item[0]] type:", type(self.dfs[item[0]]))
         print("Available indices:", self.dfs[item[0]].index[:5])  # in vài index đầu
 
-        record = self.df.loc[item]
-        print("Type:", type(record))
+        record = self.dfs[item[0]].loc[item[1]]
+
+        # Kiểm tra nếu record là nhiều dòng (DataFrame) thì lấy dòng đầu tiên
+        if isinstance(record, pd.DataFrame):
+            print("Warning: record is a DataFrame, taking the first row.")
+            record = record.iloc[0]
+
+        print("Type of record after fix:", type(record))
+
         face = load_face(record=record,
-                         root=self.roots[item[0]],
-                         size=self.size,
-                         scale=self.scale,
-                         transformer=self.transformer)
+                     root=self.roots[item[0]],
+                     size=self.size,
+                     scale=self.scale,
+                     transformer=self.transformer)
 
         label = self.labels_map[record.label]
+    
         if self.output_idx:
-            return face, label, record.name
+            return face, label, record.name  # record.name là index dòng
         else:
             return face, label
+
 
     def __len__(self):
         return self.num_samples
@@ -247,7 +255,6 @@ class FrameFaceDatasetTest(Dataset):
             self.labels_map = dict(self.labels_map)
 
     def _get_face(self, item: pd.Index) -> (torch.Tensor, torch.Tensor) or (torch.Tensor, torch.Tensor, str):
-        print("item2:", item)
         record = self.df.loc[item]
         label = self.labels_map[record.label]
         if self.aug_transformers is None:

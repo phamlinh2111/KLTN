@@ -56,9 +56,9 @@ def get_split_df(df: pd.DataFrame, dataset: str, split: str) -> pd.DataFrame:
         crf = dataset.split('-')[1]
         random_youtube_videos = np.random.permutation(
             df[(df['source'] == 'youtube') & (df['quality'] == crf)]['video'].unique())
-        train_orig = random_youtube_videos[:300]
-        val_orig = random_youtube_videos[300:300 + 100]
-        test_orig = random_youtube_videos[300 + 100:]
+        train_orig = random_youtube_videos[:400]
+        val_orig = random_youtube_videos[400:400 + 150]
+        test_orig = random_youtube_videos[400 + 150:]
         
         if split == 'train':
             split_df = pd.concat((df[df['original'].isin(train_orig)], df[df['video'].isin(train_orig)]), axis=0)

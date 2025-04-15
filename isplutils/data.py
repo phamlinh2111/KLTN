@@ -142,6 +142,10 @@ class FrameFaceIterableDataset(IterableDataset):
 
     def _get_face(self, item: pd.Index) -> (torch.Tensor, torch.Tensor) or (torch.Tensor, torch.Tensor, str):
 
+        print("item:", item)
+        print("self.dfs[item[0]] type:", type(self.dfs[item[0]]))
+        print("Available indices:", self.dfs[item[0]].index[:5])  # in vài index đầu
+
         record = self.dfs[item[0]].loc[item[1]]
         print("Type:", type(record))
         face = load_face(record=record,

@@ -31,15 +31,8 @@ def load_face(record: pd.Series, root: str, size: int, scale: str, transformer: 
     print("record content:\n", record)
     print("===================================")
     
-    if isinstance(record, pd.Series):
-        filename = record.name
-    elif isinstance(record, pd.DataFrame):
-        raise ValueError("Expected Series, but got DataFrame!")
-    else:
-        raise TypeError(f"Unsupported type: {type(record)}")
-
-    path = os.path.join(str(root), str(filename))
-
+    path = os.path.join(str(root), str(record.name))
+    print("Generated path:", path)
 
     autocache = size < 256 or scale == 'tight'
     if scale in ['crop', 'scale', ]:

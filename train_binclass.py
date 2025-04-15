@@ -342,9 +342,8 @@ def main():
                         (train_dfs[0], train_roots[0], train_dfs[0][train_dfs[0]['label'] == True].index[0],
                          'train/att/fake'),
                     ]:
+                        print("hi1")
                         record = df.loc[sample_idx]
-                        print("record type:", type(record))
-                        print("sample_idx:", sample_idx)
 
                         tb_attention(tb, tag, iteration, net, device, face_size, face_policy,
                                      transformer, root, record)
@@ -383,8 +382,10 @@ def tb_attention(tb: SummaryWriter,
                  record: pd.Series,
                  ):
     # Crop face
+    print("hi2")
     sample_t = load_face(record=record, root=root, size=patch_size_load, scale=face_crop_scale,
                          transformer=val_transformer)
+    print("hi3")
     sample_t_clean = load_face(record=record, root=root, size=patch_size_load, scale=face_crop_scale,
                                transformer=ToTensorV2())
     if torch.cuda.is_available():

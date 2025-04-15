@@ -146,7 +146,7 @@ class FrameFaceIterableDataset(IterableDataset):
         print("self.dfs[item[0]] type:", type(self.dfs[item[0]]))
         print("Available indices:", self.dfs[item[0]].index[:5])  # in vài index đầu
 
-        record = self.dfs[item[0]].loc[item[1]]
+        record = self.df.loc[item]
         print("Type:", type(record))
         face = load_face(record=record,
                          root=self.roots[item[0]],
@@ -247,6 +247,7 @@ class FrameFaceDatasetTest(Dataset):
             self.labels_map = dict(self.labels_map)
 
     def _get_face(self, item: pd.Index) -> (torch.Tensor, torch.Tensor) or (torch.Tensor, torch.Tensor, str):
+        print("item2:", item)
         record = self.df.loc[item]
         label = self.labels_map[record.label]
         if self.aug_transformers is None:

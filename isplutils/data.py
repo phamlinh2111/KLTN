@@ -143,6 +143,7 @@ class FrameFaceIterableDataset(IterableDataset):
     def _get_face(self, item: pd.Index) -> (torch.Tensor, torch.Tensor) or (torch.Tensor, torch.Tensor, str):
 
         record = self.dfs[item[0]].loc[item[1]]
+        print("Type:", type(record))
         face = load_face(record=record,
                          root=self.roots[item[0]],
                          size=self.size,

@@ -380,6 +380,7 @@ def tb_attention(tb: SummaryWriter,
                  record: pd.Series,
                  ):
     # Crop face
+    print("DEBUG:", type(record))
     sample_t = load_face(record=record, root=root, size=patch_size_load, scale=face_crop_scale,
                          transformer=val_transformer)
     sample_t_clean = load_face(record=record, root=root, size=patch_size_load, scale=face_crop_scale,

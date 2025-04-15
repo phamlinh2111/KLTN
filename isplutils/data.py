@@ -25,12 +25,13 @@ from .utils import extract_bb
 
 
 def load_face(record: pd.Series, root: str, size: int, scale: str, transformer: A.BasicTransform) -> torch.Tensor:
-    path = os.path.join(str(root), str(record.name))
     print("========== DEBUG RECORD ==========")
     print("Type:", type(record))
     print("record.name:", getattr(record, 'name', 'NO name attribute'))
     print("record content:\n", record)
     print("===================================")
+    
+    path = os.path.join(str(root), str(record.name))
 
     autocache = size < 256 or scale == 'tight'
     if scale in ['crop', 'scale', ]:

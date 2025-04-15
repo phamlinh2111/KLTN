@@ -59,12 +59,6 @@ def get_split_df(df: pd.DataFrame, dataset: str, split: str) -> pd.DataFrame:
         train_orig = random_youtube_videos[:300]
         val_orig = random_youtube_videos[300:300 + 100]
         test_orig = random_youtube_videos[300 + 100:]
-        # Lưu vào các file CSV
-        pd.DataFrame(random_youtube_videos, columns=['video']).to_csv('random_youtube_videos.csv', index=False)
-        pd.DataFrame(train_orig, columns=['video']).to_csv('train_videos.csv', index=False)
-        pd.DataFrame(val_orig, columns=['video']).to_csv('val_videos.csv', index=False)
-        pd.DataFrame(test_orig, columns=['video']).to_csv('test_videos.csv', index=False)
-        print("Đã lưu train_videos.csv, val_videos.csv, test_videos.csv")
         
         if split == 'train':
             split_df = pd.concat((df[df['original'].isin(train_orig)], df[df['video'].isin(train_orig)]), axis=0)

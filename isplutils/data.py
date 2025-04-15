@@ -26,6 +26,7 @@ from .utils import extract_bb
 
 def load_face(record: pd.Series, root: str, size: int, scale: str, transformer: A.BasicTransform) -> torch.Tensor:
     path = os.path.join(str(root), str(record.name))
+    print("DEBUG:", type(record), getattr(record, 'name', 'no name'))
     autocache = size < 256 or scale == 'tight'
     if scale in ['crop', 'scale', ]:
         cached_path = str(Path(root).joinpath('autocache', scale, str(size), str(record.name)).with_suffix('.jpg'))

@@ -118,7 +118,7 @@ def main():
     device = torch.device('cuda:{:d}'.format(args.device)) if torch.cuda.is_available() else torch.device('cpu')
     seed = args.seed
 
-    debug = args.debug
+    debug = args.debugload_face
     suffix = args.suffix
 
     enable_attention = args.attention

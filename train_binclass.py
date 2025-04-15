@@ -117,8 +117,8 @@ def main():
     num_workers = args.workers
     device = torch.device('cuda:{:d}'.format(args.device)) if torch.cuda.is_available() else torch.device('cpu')
     seed = args.seed
-
-      debug = args.debug
+    
+    debug = args.debug
     suffix = args.suffix
 
     enable_attention = args.attention

@@ -333,6 +333,7 @@ def main():
                     save_model(net, optimizer, train_loss, val_loss, iteration, batch_size, epoch, bestval_path)
 
                 # Attention
+                print("enable_attention =", enable_attention)
                 if enable_attention and hasattr(net, 'get_attention'):
                     net.eval()
                     # For each dataframe show the attention for a real,fake couple of frames

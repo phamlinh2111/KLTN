@@ -24,15 +24,8 @@ from torch.utils.data import Dataset, IterableDataset
 from .utils import extract_bb
 
 
-def load_face(record: pd.Series, root: str, size: int, scale: str, transformer: A.BasicTransform) -> torch.Tensor:
-    print("========== DEBUG RECORD ==========")
-    print("Type:", type(record))
-    print("record.name:", getattr(record, 'name', 'NO name attribute'))
-    print("record content:\n", record)
-    print("===================================")
-    
+def load_face(record: pd.Series, root: str, size: int, scale: str, transformer: A.BasicTransform) -> torch.Tensor: 
     path = os.path.join(str(root), str(record.name))
-    print("Generated path:", path)
 
     autocache = size < 256 or scale == 'tight'
     if scale in ['crop', 'scale', ]:
@@ -141,18 +134,10 @@ class FrameFaceIterableDataset(IterableDataset):
             self.labels_map = dict(self.labels_map)
 
     def _get_face(self, item: pd.Index) -> (torch.Tensor, torch.Tensor) or (torch.Tensor, torch.Tensor, str):
-        print("item:", item)
-        print("self.dfs[item[0]] type:", type(self.dfs[item[0]]))
-        print("Available indices:", self.dfs[item[0]].index[:5])  # in vài index đầu
-
         record = self.dfs[item[0]].loc[item[1]]
 
-        # Kiểm tra nếu record là nhiều dòng (DataFrame) thì lấy dòng đầu tiên
         if isinstance(record, pd.DataFrame):
-            print("Warning: record is a DataFrame, taking the first row.")
             record = record.iloc[0]
-
-        print("Type of record after fix:", type(record))
 
         face = load_face(record=record,
                      root=self.roots[item[0]],

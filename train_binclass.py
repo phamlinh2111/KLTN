@@ -343,6 +343,9 @@ def main():
                          'train/att/fake'),
                     ]:
                         record = df.loc[sample_idx]
+                        print("record type:", type(record))
+                        print("sample_idx:", sample_idx)
+
                         tb_attention(tb, tag, iteration, net, device, face_size, face_policy,
                                      transformer, root, record)
 
@@ -380,7 +383,6 @@ def tb_attention(tb: SummaryWriter,
                  record: pd.Series,
                  ):
     # Crop face
-    print("DEBUG:", type(record))
     sample_t = load_face(record=record, root=root, size=patch_size_load, scale=face_crop_scale,
                          transformer=val_transformer)
     sample_t_clean = load_face(record=record, root=root, size=patch_size_load, scale=face_crop_scale,

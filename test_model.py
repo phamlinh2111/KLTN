@@ -220,7 +220,7 @@ def process_dataset(df: pd.DataFrame,
             batch_labels = batch_labels.float()
             batch_samples = len(batch_images)
             batch_out = net(batch_images)
-            batch_out = batch_out.squeeze()
+            batch_out = batch_out.unsqueeze(1)  # Thêm chiều để có kích thước [128, 1]
             batch_out = batch_out.float()
             batch_loss = criterion(batch_out, batch_labels)
             score[idx0:idx0 + batch_samples] = batch_out.cpu().numpy()

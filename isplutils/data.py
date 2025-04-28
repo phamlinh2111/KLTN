@@ -232,7 +232,7 @@ class FrameFaceDatasetTest(Dataset):
         if isinstance(record, pd.DataFrame):
             record = record.squeeze()
         
-        label = self.labels_map[record.label]
+        label = self.labels_map[record['label']]
         if self.aug_transformers is None:
             face = load_face(record=record,
                              root=self.root,

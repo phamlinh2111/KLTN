@@ -230,7 +230,7 @@ class FrameFaceDatasetTest(Dataset):
     def _get_face(self, item: pd.Index) -> (torch.Tensor, torch.Tensor) or (torch.Tensor, torch.Tensor, str):
         record = self.df.loc[item]
         if isinstance(record, pd.DataFrame):
-            record = record.squeeze()
+            record = record.iloc[0]
         
         label = self.labels_map[record['label']]
         if self.aug_transformers is None:

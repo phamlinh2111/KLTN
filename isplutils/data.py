@@ -1,14 +1,3 @@
-"""
-Video Face Manipulation Detection Through Ensemble of CNNs
-
-Image and Sound Processing Lab - Politecnico di Milano
-
-Nicolò Bonettini
-Edoardo Daniele Cannas
-Sara Mandelli
-Luca Bondi
-Paolo Bestagini
-"""
 import os
 from pathlib import Path
 from typing import List
@@ -241,7 +230,7 @@ class FrameFaceDatasetTest(Dataset):
 
     def _get_face(self, item: pd.Index) -> (torch.Tensor, torch.Tensor) or (torch.Tensor, torch.Tensor, str):
         record = self.df.loc[item]
-        label = self.labels_map[record.label]
+        label = self.labels_map[record['label']]
         if self.aug_transformers is None:
             face = load_face(record=record,
                              root=self.root,

@@ -134,7 +134,7 @@ class FrameFaceIterableDataset(IterableDataset):
                      scale=self.scale,
                      transformer=self.transformer)
 
-        label = self.labels_map[record.label]
+        label = record['label'] 
     
         if self.output_idx:
             return face, label, record.name  # record.name là index dòng
@@ -230,7 +230,7 @@ class FrameFaceDatasetTest(Dataset):
 
     def _get_face(self, item: pd.Index) -> (torch.Tensor, torch.Tensor) or (torch.Tensor, torch.Tensor, str):
         record = self.df.loc[item]
-        label = record['label']  # Label có thể là Series, chuyển thành giá trị
+        label = record['label'] 
         if isinstance(label, pd.Series):
             label = label.iloc[0] 
         if self.aug_transformers is None:

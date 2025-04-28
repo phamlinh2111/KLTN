@@ -217,12 +217,14 @@ def process_dataset(df: pd.DataFrame,
         for batch_data in tqdm(loader):
             batch_images = batch_data[0].to(device)
             batch_labels = batch_data[1].to(device)
+            batch_labels = batch_labels.float()
             batch_samples = len(batch_images)
             batch_out = net(batch_images)
             batch_out = batch_out.squeeze()
+            batch_out = batch_out.float()
             batch_loss = criterion(batch_out, batch_labels)
-            score[idx0:idx0 + batch_samples] = batch_out.cpu().numpy()[:, 0]
-            loss[idx0:idx0 + batch_samples] = batch_loss.cpu().numpy()[:, 0]
+            score[idx0:idx0 + batch_samples] = batch_out.cpu().numpy()
+            loss[idx0:idx0 + batch_samples] = batch_loss.cpu().numpy()
             idx0 += batch_samples
 
     out_dict = {'score': score, 'loss': loss}

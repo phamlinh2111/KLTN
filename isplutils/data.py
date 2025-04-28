@@ -128,6 +128,10 @@ class FrameFaceIterableDataset(IterableDataset):
         if isinstance(record, pd.DataFrame):
             record = record.iloc[0]
 
+        if hasattr(record, 'name'):
+            name = record.name
+        else:
+            name = str(item[1])  # Nếu không có 'name', dùng chỉ mục dòng (item[1])
         face = load_face(record=record,
                      root=self.roots[item[0]],
                      size=self.size,
@@ -137,7 +141,7 @@ class FrameFaceIterableDataset(IterableDataset):
         label = record['label'] 
     
         if self.output_idx:
-            return face, label, record.name  # record.name là index dòng
+            return face, label, name  # record.name là index dòng
         else:
             return face, label
 

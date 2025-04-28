@@ -118,6 +118,7 @@ def main():
     test_dfs = [splits['test'][db][0] for db in splits['test']]
     test_roots = [splits['test'][db][1] for db in splits['test']]
 
+    print(test_splits)
     # Output paths
     out_folder = results_dir.joinpath(model_name)
     out_folder.mkdir(mode=0o775, parents=True, exist_ok=True)
@@ -140,6 +141,7 @@ def main():
             extr_list.append(
                 (dfs_out_train[idx], out_folder.joinpath(dataset + '_train.pkl'), train_roots[idx], dataset + ' TRAIN')
             )
+            
     if 'val' in test_splits:
         for idx, dataset in enumerate(test_sets):
             extr_list.append(

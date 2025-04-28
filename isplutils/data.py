@@ -124,24 +124,22 @@ class FrameFaceIterableDataset(IterableDataset):
 
     def _get_face(self, item: pd.Index) -> (torch.Tensor, torch.Tensor) or (torch.Tensor, torch.Tensor, str):
         record = self.dfs[item[0]].loc[item[1]]
+        print(f"Record type: {type(record)}")
+        print(f"Record: {record}"
 
         if isinstance(record, pd.DataFrame):
             record = record.iloc[0]
 
-        if hasattr(record, 'name'):
-            name = record.name
-        else:
-            name = str(item[1])  # Nếu không có 'name', dùng chỉ mục dòng (item[1])
         face = load_face(record=record,
                      root=self.roots[item[0]],
                      size=self.size,
                      scale=self.scale,
                      transformer=self.transformer)
 
-        label = record['label'] 
+        label = self.labels_map[record.label]
     
         if self.output_idx:
-            return face, label, name  # record.name là index dòng
+            return face, label, record.name  # record.name là index dòng
         else:
             return face, label
 
@@ -234,9 +232,9 @@ class FrameFaceDatasetTest(Dataset):
 
     def _get_face(self, item: pd.Index) -> (torch.Tensor, torch.Tensor) or (torch.Tensor, torch.Tensor, str):
         record = self.df.loc[item]
-        label = record['label'] 
-        if isinstance(label, pd.Series):
-            label = label.iloc[0] 
+        print(f"Record type 2 : {type(record)}")
+        print(f"Record 2: {record}"
+        label = self.labels_map[record.label]
         if self.aug_transformers is None:
             face = load_face(record=record,
                              root=self.root,

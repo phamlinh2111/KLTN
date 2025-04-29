@@ -13,7 +13,6 @@ available_datasets = [
     'ff-c23-720-140-140-15fpv',
     'ff-c23-720-140-140-20fpv',
     'ff-c23-720-140-140-25fpv',
-    'celebdf',  # just for convenience, not used in the original paper
 ]
 
 
@@ -48,9 +47,9 @@ def get_split_df(df: pd.DataFrame, dataset: str, split: str) -> pd.DataFrame:
         crf = dataset.split('-')[1]
         random_youtube_videos = np.random.permutation(
             df[(df['source'] == 'youtube') & (df['quality'] == crf)]['video'].unique())
-        train_orig = random_youtube_videos[:650]
-        val_orig = random_youtube_videos[650:650 + 130]
-        test_orig = random_youtube_videos[650 + 130:]
+        train_orig = random_youtube_videos[:720]
+        val_orig = random_youtube_videos[720:720 + 140]
+        test_orig = random_youtube_videos[720 + 140:]
         
         if split == 'train':
             split_df = pd.concat((df[df['original'].isin(train_orig)], df[df['video'].isin(train_orig)]), axis=0)
@@ -70,50 +69,12 @@ def get_split_df(df: pd.DataFrame, dataset: str, split: str) -> pd.DataFrame:
             split_df = split_df.loc[idxs]
         # Restore random state
         np.random.set_state(st0)
-    elif dataset == 'celebdf':
-
-        seed = 41
-        num_real_train = 600
-
-        # Save random state
-        st0 = np.random.get_state()
-        # Set seed for this selection only
-        np.random.seed(seed)
-        # Split on original videos
-        random_train_val_real_videos = np.random.permutation(
-            df[(df['label'] == False) & (df['test'] == False)]['video'].unique())
-        train_orig = random_train_val_real_videos[:num_real_train]
-        val_orig = random_train_val_real_videos[num_real_train:]
-        if split == 'train':
-            split_df = pd.concat((df[df['original'].isin(train_orig)], df[df['video'].isin(train_orig)]), axis=0)
-        elif split == 'val':
-            split_df = pd.concat((df[df['original'].isin(val_orig)], df[df['video'].isin(val_orig)]), axis=0)
-        elif split == 'test':
-            split_df = df[df['test'] == True]
-        else:
-            raise NotImplementedError('Unknown split: {}'.format(split))
-        # Restore random state
-        np.random.set_state(st0)
     else:
         raise NotImplementedError('Unknown dataset: {}'.format(dataset))
     return split_df
 
 
 def make_splits(dfdc_df: str, ffpp_df: str, dfdc_dir: str, ffpp_dir: str, dbs: Dict[str, List[str]]) -> Dict[str, Dict[str, Tuple[pd.DataFrame, str]]]:
-    """
-    Make split and return Dataframe and root
-    :param
-    dfdc_df: str, path to the DataFrame containing info on the faces extracted from the DFDC dataset with extract_faces.py
-    ffpp_df: str, path to the DataFrame containing info on the faces extracted from the FF++ dataset with extract_faces.py
-    dfdc_dir: str, path to the directory containing the faces extracted from the DFDC dataset with extract_faces.py
-    ffpp_dir: str, path to the directory containing the faces extracted from the FF++ dataset with extract_faces.py
-    dbs: {split_name:[split_dataset1,split_dataset2,...]}
-                Example:
-                {'train':['dfdc-35-5-15',],'val':['dfdc-35-5-15',]}
-    :return: split_dict: dictonary containing {split_name: ['train', 'val'], splitdb: List(pandas.DataFrame, str)}
-                Example:
-                {'train, 'dfdc-35-5-15': (dfdc_train_df, 'path/to/dir/of/DFDC/faces')}
-    """
     split_dict = {}
     full_dfs = {}
     for split_name, split_dbs in dbs.items():

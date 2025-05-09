@@ -49,13 +49,21 @@ def get_split_df(df: pd.DataFrame, dataset: str, split: str) -> pd.DataFrame:
             df[(df['source'] == 'youtube') & (df['quality'] == crf)]['video'].unique())
 
 
-        train_orig = random_youtube_videos[:820]
-        val_orig = random_youtube_videos[820:820 + 100]
-        test_orig = random_youtube_videos[820 + 100:]
+        train_orig = random_youtube_videos[:720]
+        val_orig = random_youtube_videos[720:720 + 140]
+        test_orig = random_youtube_videos[720 + 140:]
         print("Tổng video:", len(random_youtube_videos))
         print("Train:", len(train_orig))
         print("Validation:", len(val_orig))
         print("Test:", len(test_orig))
+        
+        train_samples = df[df['original'].isin(train_orig)]
+        val_samples = df[df['original'].isin(val_orig)]
+        test_samples = df[df['original'].isin(test_orig)]
+
+        print("Training samples:", len(train_samples))
+        print("Validation samples:", len(val_samples))
+        print("Test samples:", len(test_samples))
         
         if split == 'train':
             split_df = pd.concat((df[df['original'].isin(train_orig)], df[df['video'].isin(train_orig)]), axis=0)

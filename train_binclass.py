@@ -61,7 +61,7 @@ def main():
 
     parser.add_argument('--trainsamples', type=int, help='Limit the number of train samples per epoch', default=-1)
     parser.add_argument('--valsamples', type=int, help='Limit the number of validation samples per epoch',
-                        default=6000)
+                        default=-1)
 
     parser.add_argument('--logint', type=int, help='Training log interval (iterations)', default=100)
     parser.add_argument('--workers', type=int, help='Num workers for data loaders', default=6)

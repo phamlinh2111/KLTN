@@ -52,21 +52,15 @@ def get_split_df(df: pd.DataFrame, dataset: str, split: str) -> pd.DataFrame:
         train_orig = random_youtube_videos[:720]
         val_orig = random_youtube_videos[720:720 + 140]
         test_orig = random_youtube_videos[720 + 140:]
-        print("Tổng video:", len(random_youtube_videos))
-        print("Train:", len(train_orig))
-        print("Validation:", len(val_orig))
-        print("Test:", len(test_orig))
+
 
         
         if split == 'train':
             split_df = pd.concat((df[df['original'].isin(train_orig)], df[df['video'].isin(train_orig)]), axis=0)
-            split_df = split_df.drop_duplicates()  # Loại bỏ bản sao
         elif split == 'val':
             split_df = pd.concat((df[df['original'].isin(val_orig)], df[df['video'].isin(val_orig)]), axis=0)
-            split_df = split_df.drop_duplicates()  # Loại bỏ bản sao
         elif split == 'test':
             split_df = pd.concat((df[df['original'].isin(test_orig)], df[df['video'].isin(test_orig)]), axis=0)
-            split_df = split_df.drop_duplicates()  # Loại bỏ bản sao
         else:
             raise NotImplementedError('Unknown split: {}'.format(split))
 

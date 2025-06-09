@@ -26,11 +26,11 @@ class FaceExtractor:
         self.facedet = facedet
 
     def process_image(self, path: str = None, img: Image.Image or np.ndarray = None) -> dict:
+        
         """
         Process a single image
         :param path: Path to the image
         :param img: image
-        :return:
         """
 
         if img is not None and path is not None:

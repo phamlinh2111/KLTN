@@ -14,11 +14,6 @@ Feature Extractor
 
 
 class FeatureExtractor(nn.Module):
-    """
-    Abstract class to be extended when supporting features extraction.
-    It also provides standard normalized and parameters
-    """
-
     def features(self, x: torch.Tensor) -> torch.Tensor:
         raise NotImplementedError
 
@@ -158,77 +153,3 @@ class EfficientNetGenAutoAtt(FeatureExtractor):
 class EfficientNetAutoAttB4(EfficientNetGenAutoAtt):
     def __init__(self):
         super(EfficientNetAutoAttB4, self).__init__(model='efficientnet-b4', width=0)
-
-
-"""
-Xception
-"""
-
-
-class Xception(FeatureExtractor):
-    def __init__(self):
-        super(Xception, self).__init__()
-        self.xception = externals.xception()
-        self.xception.last_linear = nn.Linear(2048, 1)
-
-    def features(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.xception.features(x)
-        x = nn.ReLU(inplace=True)(x)
-        x = F.adaptive_avg_pool2d(x, (1, 1))
-        x = x.view(x.size(0), -1)
-        return x
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.xception.forward(x)
-
-
-"""
-Siamese tuning
-"""
-
-
-class SiameseTuning(FeatureExtractor):
-    def __init__(self, feat_ext: FeatureExtractor, num_feat: int, lastonly: bool = True):
-        super(SiameseTuning, self).__init__()
-        self.feat_ext = feat_ext()
-        if not hasattr(self.feat_ext, 'features'):
-            raise NotImplementedError('The provided feature extractor needs to provide a features() method')
-        self.lastonly = lastonly
-        self.classifier = nn.Sequential(
-            nn.BatchNorm1d(num_features=num_feat),
-            nn.Linear(in_features=num_feat, out_features=1),
-        )
-
-    def features(self, x):
-        x = self.feat_ext.features(x)
-        return x
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        if self.lastonly:
-            with torch.no_grad():
-                x = self.features(x)
-        else:
-            x = self.features(x)
-        x = self.classifier(x)
-        return x
-
-    def get_trainable_parameters(self):
-        if self.lastonly:
-            return self.classifier.parameters()
-        else:
-            return self.parameters()
-
-
-class EfficientNetB4ST(SiameseTuning):
-    def __init__(self):
-        super(EfficientNetB4ST, self).__init__(feat_ext=EfficientNetB4, num_feat=1792, lastonly=True)
-
-
-class EfficientNetAutoAttB4ST(SiameseTuning):
-    def __init__(self):
-        super(EfficientNetAutoAttB4ST, self).__init__(feat_ext=EfficientNetAutoAttB4, num_feat=1792, lastonly=True)
-
-
-class XceptionST(SiameseTuning):
-    def __init__(self):
-        super(XceptionST, self).__init__(feat_ext=Xception, num_feat=2048, lastonly=True)

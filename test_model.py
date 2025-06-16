@@ -22,8 +22,7 @@ def main():
     # Args
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--testsets', type=str, help='Testing datasets', nargs='+', choices=split.available_datasets,
-                        required=True)
+    parser.add_argument('--testsets', type=str, help='Testing dataset', choices=['ff-c23-720-140-140'], required=True)
     parser.add_argument('--testsplits', type=str, help='Test split', nargs='+', default=['val', 'test'],
                         choices=['train', 'val', 'test'])
     parser.add_argument('--dfdc_faces_df_path', type=str, action='store',

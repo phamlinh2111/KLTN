@@ -21,8 +21,8 @@ from isplutils.data import FrameFaceDatasetTest
 def main():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--testsets', type=str, help='Testing dataset',
-                        choices=['ff-c23-720-140-140'], required=True)
+    parser.add_argument('--testsets', type=str, help='Testing dataset', nargs='+', choices=['ff-c23-720-140-140'],
+                        required=True)
     parser.add_argument('--testsplits', type=str, help='Test split', nargs='+',
                         default=['val', 'test'], choices=['train', 'val', 'test'])
     parser.add_argument('--ffpp_faces_df_path', type=str, action='store',
@@ -93,8 +93,8 @@ def main():
     print('Loading data...')
     if ffpp_df_path is None or ffpp_faces_dir is None:
         raise RuntimeError('Specify DataFrame and directory for FF++ faces!')
-
-    splits = split.make_splits(ffpp_df=ffpp_df_path, ffpp_dir=ffpp_faces_dir, dbs={'train': train_datasets, 'val': val_datasets})
+    
+    splits = split.make_splits(ffpp_df=ffpp_df_path, ffpp_dir=ffpp_faces_dir, dbs={'train': test_sets, 'val': test_sets, 'test': test_sets})
 
     # Extract DataFrames + roots
     train_dfs = [splits['train'][db][0] for db in splits['train']]

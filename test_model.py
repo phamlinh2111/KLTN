@@ -25,11 +25,13 @@ def main():
                         choices=['ff-c23-720-140-140'], required=True)
     parser.add_argument('--testsplits', type=str, help='Test split', nargs='+',
                         default=['val', 'test'], choices=['train', 'val', 'test'])
+    parser.add_argument('--ffpp_faces_df_path', type=str, action='store',
+                        help='Path to the Pandas Dataframe obtained from extract_faces.py on the FF++ dataset. '
+                             'Required for training/validating on the FF++ dataset.')
+    parser.add_argument('--ffpp_faces_dir', type=str, action='store',
+                        help='Path to the directory containing the faces extracted from the FF++ dataset. '
+                             'Required for training/validating on the FF++ dataset.')
 
-    parser.add_argument('--ffpp_faces_df_path', type=str, required=True,
-                        help='Path to FF++ faces DataFrame (from extract_faces.py)')
-    parser.add_argument('--ffpp_faces_dir', type=str, required=True,
-                        help='Path to FF++ faces directory (from extract_faces.py)')
 
     parser.add_argument('--model_path', type=Path, required=True,
                         help='Full path to the trained model')
@@ -88,13 +90,11 @@ def main():
     # Transformer
     test_transformer = utils.get_transformer(face_policy, patch_size, net.get_normalizer(), train=False)
 
-    # Load splits (only FF++)
     print('Loading data...')
-    splits = split.make_splits(
-        ffpp_df=ffpp_df_path,
-        ffpp_dir=ffpp_faces_dir,
-        dbs={'train': test_sets, 'val': test_sets, 'test': test_sets}
-    )
+    if ffpp_df_path is None or ffpp_faces_dir is None:
+        raise RuntimeError('Specify DataFrame and directory for FF++ faces!')
+
+    splits = split.make_splits(ffpp_df=ffpp_df_path, ffpp_dir=ffpp_faces_dir, dbs={'train': train_datasets, 'val': val_datasets})
 
     # Extract DataFrames + roots
     train_dfs = [splits['train'][db][0] for db in splits['train']]

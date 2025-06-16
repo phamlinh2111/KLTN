@@ -190,7 +190,7 @@ def get_transformer(face_policy: str, patch_size: int, net_normalizer: transform
             A.OneOf([
                 A.ImageCompression(quality_lower=15, quality_upper=40, p=0.5),
                 A.Downscale(scale_min=0.3, scale_max=0.7, p=0.5),
-                A.JpegCompression(quality_lower=30, quality_upper=60, p=0.5),
+                A.ImageCompression(quality_lower=30, quality_upper=60, p=0.5),
             ], p=0.7),
         ]
     else:

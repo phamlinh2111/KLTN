@@ -20,13 +20,14 @@ def get_split_df(df: pd.DataFrame, split: str) -> pd.DataFrame:
 
     num_videos = len(random_youtube_videos)
 
-    train_size = int(0.8 * num_videos)     # 800
-    val_size = int(0.1 * num_videos)       # 100
-    test_size = num_videos - train_size - val_size  # 100
+    train_size = int(0.7 * num_videos)            # 700
+    val_size = int(0.15 * num_videos)             # 150
+    test_size = num_videos - train_size - val_size  # 150
 
     train_orig = random_youtube_videos[:train_size]
     val_orig = random_youtube_videos[train_size:train_size + val_size]
     test_orig = random_youtube_videos[train_size + val_size:]
+
 
 
     if split == 'train':

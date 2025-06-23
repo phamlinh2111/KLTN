@@ -18,16 +18,9 @@ def get_split_df(df: pd.DataFrame, split: str) -> pd.DataFrame:
         df[(df['source'] == 'youtube') & (df['quality'] == crf)]['video'].unique()
     )
 
-    num_videos = len(random_youtube_videos)
-
-    train_size = int(0.7 * num_videos)            # 700
-    val_size = int(0.15 * num_videos)             # 150
-    test_size = num_videos - train_size - val_size  # 150
-
-    train_orig = random_youtube_videos[:train_size]
-    val_orig = random_youtube_videos[train_size:train_size + val_size]
-    test_orig = random_youtube_videos[train_size + val_size:]
-
+    train_orig = random_youtube_videos[:720]
+    val_orig = random_youtube_videos[720:720 + 140]
+    test_orig = random_youtube_videos[720 + 140:]
 
 
     if split == 'train':

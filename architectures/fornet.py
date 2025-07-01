@@ -48,7 +48,7 @@ class EfficientNetB4(EfficientNetGen):
 class EfficientNetAutoAtt(EfficientNet):
     def init_att(self, model: str, width: int):
         if model == 'efficientnet-b4':
-            self.att_block_idx = 15  
+            self.att_block_idx = 21 
 
             in_channels = self._blocks[self.att_block_idx]._project_conv.out_channels
             if width == 0:

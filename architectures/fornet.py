@@ -8,11 +8,6 @@ from torchvision import transforms
 
 from . import externals
 
-"""
-Feature Extractor
-"""
-
-
 class FeatureExtractor(nn.Module):
     def features(self, x: torch.Tensor) -> torch.Tensor:
         raise NotImplementedError
@@ -23,11 +18,6 @@ class FeatureExtractor(nn.Module):
     @staticmethod
     def get_normalizer():
         return transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-
-
-"""
-EfficientNet
-"""
 
 
 class EfficientNetGen(FeatureExtractor):
@@ -55,52 +45,44 @@ class EfficientNetB4(EfficientNetGen):
     def __init__(self):
         super(EfficientNetB4, self).__init__(model='efficientnet-b4')
 
-
-"""
-EfficientNetAutoAtt
-"""
-
-
 class EfficientNetAutoAtt(EfficientNet):
     def init_att(self, model: str, width: int):
-        """
-        Initialize attention
-        :param model: efficientnet-bx, x \in {0,..,7}
-        :param depth: attention width
-        :return:
-        """
         if model == 'efficientnet-b4':
-            self.att_block_idx = 9
+            self.att_block_idx = 15  
+
+            in_channels = self._blocks[self.att_block_idx]._project_conv.out_channels
             if width == 0:
-                self.attconv = nn.Conv2d(kernel_size=1, in_channels=56, out_channels=1)
+                self.attconv = nn.Sequential(
+                    nn.Conv2d(in_channels, 1, kernel_size=1),
+                    nn.Sigmoid()
+                )
             else:
                 attconv_layers = []
                 for i in range(width):
                     attconv_layers.append(
-                        ('conv{:d}'.format(i), nn.Conv2d(kernel_size=3, padding=1, in_channels=56, out_channels=56)))
+                        (f'conv{i}', nn.Conv2d(in_channels, in_channels, kernel_size=3, padding=1))
+                    )
                     attconv_layers.append(
-                        ('relu{:d}'.format(i), nn.ReLU(inplace=True)))
-                attconv_layers.append(('conv_out', nn.Conv2d(kernel_size=1, in_channels=56, out_channels=1)))
+                        (f'relu{i}', nn.ReLU(inplace=True))
+                    )
+                attconv_layers.append(('conv_out', nn.Conv2d(in_channels, 1, kernel_size=1)))
+                attconv_layers.append(('sigmoid', nn.Sigmoid()))
                 self.attconv = nn.Sequential(OrderedDict(attconv_layers))
         else:
-            raise ValueError('Model not valid: {}'.format(model))
+            raise ValueError(f'Model not valid: {model}')
 
     def get_attention(self, x: torch.Tensor) -> torch.Tensor:
-
-        # Placeholder
         att = None
-
-        # Stem
         x = self._swish(self._bn0(self._conv_stem(x)))
 
-        # Blocks
         for idx, block in enumerate(self._blocks):
             drop_connect_rate = self._global_params.drop_connect_rate
             if drop_connect_rate:
                 drop_connect_rate *= float(idx) / len(self._blocks)
             x = block(x, drop_connect_rate=drop_connect_rate)
+
             if idx == self.att_block_idx:
-                att = torch.sigmoid(self.attconv(x))
+                att = self.attconv(x)
                 break
 
         return att
@@ -152,7 +134,7 @@ class EfficientNetGenAutoAtt(FeatureExtractor):
 
 class EfficientNetAutoAttB4(EfficientNetGenAutoAtt):
     def __init__(self):
-        super(EfficientNetAutoAttB4, self).__init__(model='efficientnet-b4', width=0)
+        super(EfficientNetAutoAttB4, self).__init__(model='efficientnet-b4', width=2)
 
 class SiameseTuning(FeatureExtractor):
     def __init__(self, feat_ext: FeatureExtractor, num_feat: int, lastonly: bool = True):

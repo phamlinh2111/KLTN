@@ -1,14 +1,3 @@
-"""
-Video Face Manipulation Detection Through Ensemble of CNNs
-
-Image and Sound Processing Lab - Politecnico di Milano
-
-Nicolò Bonettini
-Edoardo Daniele Cannas
-Sara Mandelli
-Luca Bondi
-Paolo Bestagini
-"""
 from pprint import pprint
 from typing import Iterable, List
 
@@ -25,11 +14,6 @@ from torchvision import transforms
 
 
 def extract_meta_av(path: str) -> (int, int, int):
-    """
-    Extract video height, width and number of frames to index the files
-    :param path:
-    :return:
-    """
     import av
     try:
         video = av.open(path)
@@ -46,11 +30,6 @@ def extract_meta_av(path: str) -> (int, int, int):
 
 
 def extract_meta_cv(path: str) -> (int, int, int):
-    """
-    Extract video height, width and number of frames to index the files
-    :param path:
-    :return:
-    """
     try:
         vid = cv2.VideoCapture(path)
         num_frames = int(vid.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -76,16 +55,6 @@ def adapt_bb(frame_height: int, frame_width: int, bb_height: int, bb_width: int,
 
 
 def extract_bb(frame: Image.Image, bb: Iterable, scale: str, size: int) -> Image.Image:
-    """
-    Extract a face from a frame according to the given bounding box and scale policy
-    :param frame: Entire frame
-    :param bb: Bounding box (left,top,right,bottom) in the reference system of the frame
-    :param scale: "scale" to crop a square with size equal to the maximum between height and width of the face, then scale to size
-                  "crop" to crop a fixed square around face center,
-                  "tight" to crop face exactly at the bounding box with no scaling
-    :param size: size of the face
-    :return:
-    """
     left, top, right, bottom = bb
     if scale == "scale":
         bb_width = int(right) - int(left)
@@ -158,54 +127,37 @@ def get_transformer(face_policy: str, patch_size: int, net_normalizer: transform
                           border_mode=cv2.BORDER_CONSTANT, value=0, always_apply=True),
             A.Resize(height=patch_size, width=patch_size, always_apply=True),
         ]
-        downsample_train_transformations = [A.Downscale(scale_max=0.5, scale_min=0.5, p=0.5)] if train else []
-
     elif face_policy == 'tight':
         loading_transformations = [
             A.LongestMaxSize(max_size=patch_size, always_apply=True),
             A.PadIfNeeded(min_height=patch_size, min_width=patch_size,
                           border_mode=cv2.BORDER_CONSTANT, value=0, always_apply=True),
         ]
-        downsample_train_transformations = [A.Downscale(scale_max=0.5, scale_min=0.5, p=0.5)] if train else []
-
     else:
-        raise ValueError('Unknown value for face_policy: {}'.format(face_policy))
+        raise ValueError(f"Unknown face_policy: {face_policy}")
+
+    downsample_train_transformations = []
 
     if train:
         aug_transformations = [
-            A.HorizontalFlip(p=0.5),
+            A.HorizontalFlip(p=0.3), 
 
             A.OneOf([
-                A.RandomBrightnessContrast(brightness_limit=0.2, contrast_limit=0.2, p=0.5),
-                A.HueSaturationValue(hue_shift_limit=10, sat_shift_limit=20, val_shift_limit=10, p=0.5),
-            ], p=0.6),
-
-            A.OneOf([
-                A.ISONoise(color_shift=(0.01, 0.1), intensity=(0.1, 0.5), p=0.3),
-                A.GaussNoise(var_limit=(10.0, 50.0), p=0.3),
-                A.MotionBlur(blur_limit=5, p=0.3),
-                A.MedianBlur(blur_limit=3, p=0.2),
-            ], p=0.7),
-
-            A.OneOf([
-                A.ImageCompression(quality_lower=15, quality_upper=40, p=0.5),
-                A.Downscale(scale_min=0.3, scale_max=0.7, p=0.5),
-                A.ImageCompression(quality_lower=30, quality_upper=60, p=0.5),
-            ], p=0.7),
+                A.RandomBrightnessContrast(brightness_limit=0.05, contrast_limit=0.05, p=0.5),
+                A.HueSaturationValue(hue_shift_limit=3, sat_shift_limit=5, val_shift_limit=5, p=0.5),
+            ], p=0.4),
         ]
     else:
         aug_transformations = []
 
     final_transformations = [
         A.Normalize(mean=net_normalizer.mean, std=net_normalizer.std),
-        ToTensorV2(),
+        ToTensorV2()
     ]
 
-    transf = A.Compose(
+    return A.Compose(
         loading_transformations + downsample_train_transformations + aug_transformations + final_transformations
     )
-    return transf
-
 
 def aggregate(x, deadzone: float, pre_mult: float, policy: str, post_mult: float, clipmargin: float, params={}):
     x = x.copy()

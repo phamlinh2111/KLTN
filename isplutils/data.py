@@ -53,7 +53,6 @@ def load_face(record: pd.Series, root: str, size: int, scale: str, transformer: 
             if len(face.shape) != 3:
                 raise RuntimeError('Incorrect format: {}'.format(path))
         except KeyboardInterrupt as e:
-            # We want keybord interrupts to be propagated
             raise e
         except (OSError, IOError) as e:
             print('Error while reading: {}'.format(path))
@@ -76,19 +75,6 @@ class FrameFaceIterableDataset(IterableDataset):
                  output_index: bool = False,
                  labels_map: dict = None,
                  seed: int = None):
-        """
-
-        :param roots: List of root folders for frames cache
-        :param dfs: List of DataFrames of cached frames with 'bb' column as array of 4 elements (left,top,right,bottom)
-                   and 'label' column
-        :param size: face size
-        :param num_samples:
-        :param scale: Rescale the face to the given size, preserving the aspect ratio.
-                      If false crop around center to the given size
-        :param transformer:
-        :param output_index: enable output of df_frames index
-        :param labels_map: map from 'REAL' and 'FAKE' to actual labels
-        """
 
         self.dfs = dfs
         self.size = int(size)
@@ -136,7 +122,7 @@ class FrameFaceIterableDataset(IterableDataset):
         label = self.labels_map[record.label]
     
         if self.output_idx:
-            return face, label, record.name  # record.name là index dòng
+            return face, label, record.name 
         else:
             return face, label
 
@@ -199,19 +185,6 @@ class FrameFaceDatasetTest(Dataset):
                  transformer: A.BasicTransform = ToTensorV2(),
                  labels_map: dict = None,
                  aug_transformers: List[A.BasicTransform] = None):
-        """
-
-        :param root: root folder for frames cache
-        :param df: DataFrame of cached frames with 'bb' column as array of 4 elements (left,top,right,bottom)
-                   and 'label' column
-        :param size: face size
-        :param num_samples:
-        :param scale: Rescale the face to the given size, preserving the aspect ratio.
-                      If false crop around center to the given size
-        :param transformer:
-        :param labels_map: dcit to map df labels
-        :param aug_transformers: if not None, creates multiple copies of the same sample according to the provided augmentations
-        """
 
         self.df = df
         self.size = int(size)

@@ -52,8 +52,7 @@ def main():
     args = parser.parse_args()
 
     device = torch.device(f'cuda:{args.device}' if torch.cuda.is_available() else 'cpu')
-
-    # Parse basic args
+  
     test_sets = args.testsets
     test_splits = args.testsplits
     batch_size = args.batch
@@ -66,7 +65,6 @@ def main():
     ffpp_df_path = args.ffpp_faces_df_path
     ffpp_faces_dir = args.ffpp_faces_dir
 
-    # Parse model info from filename
     face_policy = str(model_path).split('face-')[1].split('_')[0]
     patch_size = int(str(model_path).split('size-')[1].split('_')[0])
     net_name = str(model_path).split('net-')[1].split('_')[0]

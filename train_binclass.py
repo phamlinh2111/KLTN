@@ -388,7 +388,7 @@ def validation_routine(net, device, val_loader, criterion, tb, iteration, tag: s
     val_loss = 0.
     pred_list = list()
     labels_list = list()
-    for val_data in tqdm(val_loader, desc='Validation', dynamic_ncols=True, leave=True, total=len(val_loader) // loader_len_norm):
+    for val_data in tqdm(val_loader, desc='Validation', dynamic_ncols=True, leave=False, total=len(val_loader) // loader_len_norm):
         batch_data, batch_labels = val_data
 
         val_batch_num = len(batch_labels)

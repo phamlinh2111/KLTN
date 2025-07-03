@@ -134,7 +134,7 @@ class EfficientNetGenAutoAtt(FeatureExtractor):
 
 class EfficientNetAutoAttB4(EfficientNetGenAutoAtt):
     def __init__(self):
-        super(EfficientNetAutoAttB4, self).__init__(model='efficientnet-b4', width=0)
+        super(EfficientNetAutoAttB4, self).__init__(model='efficientnet-b4', width = 2)
 
 class SiameseTuning(FeatureExtractor):
     def __init__(self, feat_ext: FeatureExtractor, num_feat: int, lastonly: bool = True):

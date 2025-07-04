@@ -13,15 +13,6 @@ class FaceExtractor:
     """Wrapper for face extraction workflow."""
 
     def __init__(self, video_read_fn = None, facedet: BlazeFace = None):
-        """Creates a new FaceExtractor.
-
-        Arguments:
-            video_read_fn: a function that takes in a path to a video file
-                and returns a tuple consisting of a NumPy array with shape
-                (num_frames, H, W, 3) and a list of frame indices, or None
-                in case of an error
-            facedet: the face detector object
-        """
         self.video_read_fn = video_read_fn
         self.facedet = facedet
 
@@ -224,37 +215,6 @@ class FaceExtractor:
         return self.process_videos(input_dir, filenames, [0])
 
     def _tile_frames(self, frames: np.ndarray, target_size: Tuple[int, int]) -> (np.ndarray, List[float]):
-        """Splits each frame into several smaller, partially overlapping tiles
-        and resizes each tile to target_size.
-
-        After a bunch of experimentation, I found that for a 1920x1080 video,
-        BlazeFace works better on three 1080x1080 windows. These overlap by 420
-        pixels. (Two windows also work but it's best to have a clean center crop
-        in there as well.)
-
-        I also tried 6 windows of size 720x720 (horizontally: 720|360, 360|720;
-        vertically: 720|1200, 480|720|480, 1200|720) but that gives many false
-        positives when a window has no face in it.
-
-        For a video in portrait orientation (1080x1920), we only take a single
-        crop of the top-most 1080 pixels. If we split up the video vertically,
-        then we might get false positives again.
-
-        (NOTE: Not all videos are necessarily 1080p but the code can handle this.)
-
-        Arguments:
-            frames: NumPy array of shape (num_frames, height, width, 3)
-            target_size: (width, height)
-
-        Returns:
-            - a new (num_frames * N, target_size[1], target_size[0], 3) array
-              where N is the number of tiles used.
-            - a list [scale_w, scale_h, offset_x, offset_y] that describes how
-              to map the resized and cropped tiles back to the original image
-              coordinates. This is needed for scaling up the face detections
-              from the smaller image to the original image, so we can take the
-              face crops in the original coordinate space.
-        """
         num_frames, H, W, _ = frames.shape
 
         num_h, num_v, split_size, x_step, y_step = self.get_tiles_params(H, W)

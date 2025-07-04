@@ -48,7 +48,7 @@ class EfficientNetB4(EfficientNetGen):
 class EfficientNetAutoAtt(EfficientNet):
     def init_att(self, model: str, width: int):
         if model == 'efficientnet-b4':
-            self.att_block_idx = 21 
+            self.att_block_idx = 15
 
             in_channels = self._blocks[self.att_block_idx]._project_conv.out_channels
             if width == 0:
@@ -134,7 +134,7 @@ class EfficientNetGenAutoAtt(FeatureExtractor):
 
 class EfficientNetAutoAttB4(EfficientNetGenAutoAtt):
     def __init__(self):
-        super(EfficientNetAutoAttB4, self).__init__(model='efficientnet-b4', width = 2)
+        super(EfficientNetAutoAttB4, self).__init__(model='efficientnet-b4', width=2)
 
 class SiameseTuning(FeatureExtractor):
     def __init__(self, feat_ext: FeatureExtractor, num_feat: int, lastonly: bool = True):

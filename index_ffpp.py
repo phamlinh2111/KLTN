@@ -1,6 +1,3 @@
-"""
-Index FaceForensics++
-"""
 import argparse
 import sys
 from multiprocessing import Pool

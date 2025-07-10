@@ -31,9 +31,9 @@ def main():
     # Args
     parser = argparse.ArgumentParser()
     parser.add_argument('--net', type=str, help='Net model class', required=True)
-    parser.add_argument('--traindb', type=str, help='Training datasets', nargs='+', choices=['ff-c23-720-140-140'],
+    parser.add_argument('--traindb', type=str, help='Training datasets', nargs='+', default=['ff-c23-720-140-140'],
                         required=True)
-    parser.add_argument('--valdb', type=str, help='Validation datasets', nargs='+', choices=['ff-c23-720-140-140'],
+    parser.add_argument('--valdb', type=str, help='Validation datasets', nargs='+', default=['ff-c23-720-140-140'],
                         required=True)
     parser.add_argument('--ffpp_faces_df_path', type=str, action='store',
                         help='Path to the Pandas Dataframe obtained from extract_faces.py on the FF++ dataset. '
@@ -41,8 +41,6 @@ def main():
     parser.add_argument('--ffpp_faces_dir', type=str, action='store',
                         help='Path to the directory containing the faces extracted from the FF++ dataset. '
                              'Required for training/validating on the FF++ dataset.')
-    parser.add_argument('--face', type=str, help='Face crop or scale', required=True,
-                        choices=['scale', 'tight'])
     parser.add_argument('--size', type=int, help='Train patch size', required=True)
 
     parser.add_argument('--batch', type=int, help='Batch size to fit in GPU memory', default=32)
@@ -81,7 +79,6 @@ def main():
     val_datasets = args.valdb
     ffpp_df_path = args.ffpp_faces_df_path
     ffpp_faces_dir = args.ffpp_faces_dir
-    face_policy = args.face
     face_size = args.size
 
     batch_size = args.batch
@@ -120,23 +117,11 @@ def main():
 
     min_lr = initial_lr * 1e-5
     optimizer = optim.Adam(net.get_trainable_parameters(), lr=initial_lr)
-    lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer=optimizer,
-        mode='min',
-        factor=0.1,
-        patience=patience,
-        cooldown=2 * patience,
-        min_lr=min_lr,
-    )
+    lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer, mode='min', factor=0.1,
+                                                        patience=patience, cooldown=2 * patience, min_lr=min_lr)
 
-    tag = utils.make_train_tag(net_class=net_class,
-                               traindb=train_datasets,
-                               face_policy=face_policy,
-                               patch_size=face_size,
-                               seed=seed,
-                               suffix=suffix,
-                               debug=debug,
-                               )
+    tag = utils.make_train_tag(net_class=net_class, traindb=train_datasets, 
+                               patch_size=face_size, seed=seed, suffix=suffix, debug=debug)
 
     # Model checkpoint paths
     bestval_path = os.path.join(weights_folder, tag, 'bestval.pth')
@@ -188,8 +173,7 @@ def main():
             warnings.simplefilter("ignore")
             tb.add_graph(net, [dummy, ], verbose=False)
 
-    transformer = utils.get_transformer(face_policy=face_policy, patch_size=face_size,
-                                        net_normalizer=net.get_normalizer(), train=True)
+    transformer = utils.get_transformer(patch_size=face_size, net_normalizer=net.get_normalizer(), train=True)
 
     # Datasets and data loaders
     print('Loading data')
@@ -203,21 +187,11 @@ def main():
     val_roots = [splits['val'][db][1] for db in splits['val']]
     val_dfs = [splits['val'][db][0] for db in splits['val']]
 
-    train_dataset = FrameFaceIterableDataset(roots=train_roots,
-                                             dfs=train_dfs,
-                                             scale=face_policy,
-                                             num_samples=max_train_samples,
-                                             transformer=transformer,
-                                             size=face_size,
-                                             )
+    train_dataset = FrameFaceIterableDataset(roots=train_roots, dfs=train_dfs,
+                                             num_samples=max_train_samples, transformer=transformer, size=face_size)
 
-    val_dataset = FrameFaceIterableDataset(roots=val_roots,
-                                           dfs=val_dfs,
-                                           scale=face_policy,
-                                           num_samples=max_val_samples,
-                                           transformer=transformer,
-                                           size=face_size,
-                                           )
+    val_dataset = FrameFaceIterableDataset(roots=val_roots, dfs=val_dfs,
+                                           num_samples=max_val_samples, transformer=transformer, size=face_size)
 
     train_loader = DataLoader(train_dataset, num_workers=num_workers, batch_size=batch_size, )
 
@@ -280,8 +254,7 @@ def main():
             if iteration > 0 and (iteration % validation_interval == 0):
 
                 # Model checkpoint
-                save_model(net, optimizer, train_loss, val_loss, iteration, batch_size, epoch,
-                           periodic_path.format(iteration))
+                save_model(net, optimizer, train_loss, val_loss, iteration, batch_size, epoch, periodic_path.format(iteration))
 
                 # Train cumulative stats
                 train_labels = np.concatenate(train_labels_list)
@@ -308,7 +281,6 @@ def main():
                 # Attention
                 if enable_attention and hasattr(net, 'get_attention'):
                     net.eval()
-                    # For each dataframe show the attention for a real,fake couple of frames
                     for df, root, sample_idx, tag in [
                         (train_dfs[0], train_roots[0], train_dfs[0][train_dfs[0]['label'] == False].index[0],
                          'train/att/real'),
@@ -317,8 +289,7 @@ def main():
                     ]:
                         record = df.loc[sample_idx]
 
-                        tb_attention(tb, tag, iteration, net, device, face_size, face_policy,
-                                     transformer, root, record)
+                        tb_attention(tb, tag, iteration, net, device, face_size, transformer, root, record)
 
                 if optimizer.param_groups[0]['lr'] == min_lr:
                     print('Reached minimum learning rate. Stopping.')
@@ -332,36 +303,20 @@ def main():
                 stop = True
                 break
 
-            # End of iteration
-
         epoch += 1
 
-    # Needed to flush out last events
     tb.close()
 
     print('Completed')
 
 
-def tb_attention(tb: SummaryWriter,
-                 tag: str,
-                 iteration: int,
-                 net: nn.Module,
-                 device: torch.device,
-                 patch_size_load: int,
-                 face_crop_scale: str,
-                 val_transformer: A.BasicTransform,
-                 root: str,
-                 record: pd.Series,
-                 ):
+def tb_attention(tb: SummaryWriter, tag: str, iteration: int, net: nn.Module, device: torch.device, patch_size_load: int, 
+                 val_transformer: A.BasicTransform, root: str, record: pd.Series, ):
     # Crop face
-    sample_t = load_face(record=record, root=root, size=patch_size_load, scale=face_crop_scale,
-                         transformer=val_transformer)
-    sample_t_clean = load_face(record=record, root=root, size=patch_size_load, scale=face_crop_scale,
-                               transformer=ToTensorV2())
+    sample_t = load_face(record=record, root=root, size=patch_size_load, transformer=val_transformer)
+    sample_t_clean = load_face(record=record, root=root, size=patch_size_load,transformer=ToTensorV2())
     if torch.cuda.is_available():
         sample_t = sample_t.cuda(device)
-    # Transform
-    # Feed to net
     with torch.no_grad():
         att: torch.Tensor = net.get_attention(sample_t.unsqueeze(0))[0].cpu()
     att_img: Image.Image = ToPILImage()(att)
@@ -373,7 +328,7 @@ def tb_attention(tb: SummaryWriter,
 
 
 def batch_forward(net: nn.Module, device: torch.device, criterion, data: torch.Tensor, labels: torch.Tensor) -> (
-        torch.Tensor, float, int):
+                    torch.Tensor, float, int):
     data = data.to(device)
     labels = labels.to(device)
     out = net(data)
@@ -415,20 +370,12 @@ def validation_routine(net, device, val_loader, criterion, tb, iteration, tag: s
     return val_loss
 
 
-def save_model(net: nn.Module, optimizer: optim.Optimizer,
-               train_loss: float, val_loss: float,
-               iteration: int, batch_size: int, epoch: int,
-               path: str):
+def save_model(net: nn.Module, optimizer: optim.Optimizer, train_loss: float, val_loss: float,
+               iteration: int, batch_size: int, epoch: int, path: str):
     path = str(path)
-    state = dict(net=net.state_dict(),
-                 opt=optimizer.state_dict(),
-                 train_loss=train_loss,
-                 val_loss=val_loss,
-                 iteration=iteration,
-                 batch_size=batch_size,
-                 epoch=epoch)
+    state = dict(net=net.state_dict(), opt=optimizer.state_dict(), train_loss=train_loss, val_loss=val_loss,
+                 iteration=iteration, batch_size=batch_size, epoch=epoch)
     torch.save(state, path)
-
 
 if __name__ == '__main__':
     main()

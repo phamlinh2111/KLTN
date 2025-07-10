@@ -12,29 +12,27 @@ from torch.utils.data import Dataset, IterableDataset
 
 from .utils import extract_bb
 
-
-def load_face(record: pd.Series, root: str, size: int, scale: str, transformer: A.BasicTransform) -> torch.Tensor: 
+def load_face(record: pd.Series, root: str, size: int, transformer: A.BasicTransform) -> torch.Tensor: 
     path = os.path.join(str(root), str(record.name))
+    
+    # Dùng autocache nếu ảnh nhỏ
+    autocache = size < 256
 
-    autocache = size < 256 or scale == 'tight'
-    if scale in ['crop', 'scale', ]:
-        cached_path = str(Path(root).joinpath('autocache', scale, str(size), str(record.name)).with_suffix('.jpg'))
-    else:
-        # when self.scale == 'tight' the extracted face is not dependent on size
-        cached_path = str(Path(root).joinpath('autocache', scale, str(record.name)).with_suffix('.jpg'))
+    # Đường dẫn file cache
+    cached_path = str(Path(root).joinpath('autocache', str(size), str(record.name)).with_suffix('.jpg'))
 
     face = np.zeros((size, size, 3), dtype=np.uint8)
+
     if os.path.exists(cached_path):
         try:
             face = Image.open(cached_path)
             face = np.array(face)
             if len(face.shape) != 3:
-                raise RuntimeError('Incorrect format: {}'.format(path))
-        except KeyboardInterrupt as e:
-            # We want keybord interrupts to be propagated
-            raise e
+                raise RuntimeError(f'Incorrect format: {path}')
+        except KeyboardInterrupt:
+            raise
         except (OSError, IOError) as e:
-            print('Deleting corrupted cache file: {}'.format(cached_path))
+            print(f'Deleting corrupted cache file: {cached_path}')
             print(e)
             os.unlink(cached_path)
             face = np.zeros((size, size, 3), dtype=np.uint8)
@@ -43,37 +41,31 @@ def load_face(record: pd.Series, root: str, size: int, scale: str, transformer: 
         try:
             frame = Image.open(path)
             bb = record['left'], record['top'], record['right'], record['bottom']
-            face = extract_bb(frame, bb=bb, size=size, scale=scale)
+            face_img = extract_bb(frame, bb=bb, size=size)  
 
             if autocache:
                 os.makedirs(os.path.dirname(cached_path), exist_ok=True)
-                face.save(cached_path, quality=95, subsampling='4:4:4')
+                face_img.save(cached_path, quality=95, subsampling='4:4:4')
 
-            face = np.array(face)
+            face = np.array(face_img)
             if len(face.shape) != 3:
-                raise RuntimeError('Incorrect format: {}'.format(path))
-        except KeyboardInterrupt as e:
-            raise e
+                raise RuntimeError(f'Incorrect format: {path}')
+        except KeyboardInterrupt:
+            raise
         except (OSError, IOError) as e:
-            print('Error while reading: {}'.format(path))
+            print(f'Error while reading: {path}')
             print(e)
             face = np.zeros((size, size, 3), dtype=np.uint8)
 
     face = transformer(image=face)['image']
-
     return face
 
 
 class FrameFaceIterableDataset(IterableDataset):
 
     def __init__(self,
-                 roots: List[str],
-                 dfs: List[pd.DataFrame],
-                 size: int, scale: str,
-                 num_samples: int = -1,
-                 transformer: A.BasicTransform = ToTensorV2(),
-                 output_index: bool = False,
-                 labels_map: dict = None,
+                 roots: List[str], dfs: List[pd.DataFrame], size: int, num_samples: int = -1,
+                 transformer: A.BasicTransform = ToTensorV2(), output_index: bool = False, labels_map: dict = None,
                  seed: int = None):
 
         self.dfs = dfs
@@ -98,7 +90,6 @@ class FrameFaceIterableDataset(IterableDataset):
 
         self.output_idx = bool(output_index)
 
-        self.scale = str(scale)
         self.roots = [str(r) for r in roots]
         self.transformer = transformer
 
@@ -113,12 +104,7 @@ class FrameFaceIterableDataset(IterableDataset):
         if isinstance(record, pd.DataFrame):
             record = record.iloc[0]
 
-        face = load_face(record=record,
-                     root=self.roots[item[0]],
-                     size=self.size,
-                     scale=self.scale,
-                     transformer=self.transformer)
-
+        face = load_face(record=record, root=self.roots[item[0]], size=self.size, transformer=self.transformer)
         label = self.labels_map[record.label]
     
         if self.output_idx:
@@ -180,16 +166,11 @@ def get_iterative_real_fake_idxs(df_real: pd.DataFrame, df_fake: pd.DataFrame,
 
 class FrameFaceDatasetTest(Dataset):
 
-    def __init__(self, root: str, df: pd.DataFrame,
-                 size: int, scale: str,
-                 transformer: A.BasicTransform = ToTensorV2(),
-                 labels_map: dict = None,
-                 aug_transformers: List[A.BasicTransform] = None):
+    def __init__(self, root: str, df: pd.DataFrame, size: int, transformer: A.BasicTransform = ToTensorV2(),
+                 labels_map: dict = None, aug_transformers: List[A.BasicTransform] = None):
 
         self.df = df
         self.size = int(size)
-
-        self.scale = str(scale)
         self.root = str(root)
         self.transformer = transformer
         self.aug_transformers = aug_transformers
@@ -207,20 +188,13 @@ class FrameFaceDatasetTest(Dataset):
         
         label = self.labels_map[record['label']]
         if self.aug_transformers is None:
-            face = load_face(record=record,
-                             root=self.root,
-                             size=self.size,
-                             scale=self.scale,
-                             transformer=self.transformer)
+            face = load_face(record=record, root=self.root, size=self.size, transformer=self.transformer)
             return face, label
         else:
             faces = []
             for aug_transf in self.aug_transformers:
                 faces.append(
-                    load_face(record=record,
-                              root=self.root,
-                              size=self.size,
-                              scale=self.scale,
+                    load_face(record=record,  root=self.root,  size=self.size,
                               transformer=A.Compose([aug_transf, self.transformer])
                               ))
             faces = torch.stack(faces)

@@ -2,6 +2,7 @@ from pprint import pprint
 from typing import Iterable, List
 
 import albumentations as A
+import av
 import cv2
 import numpy as np
 import scipy
@@ -14,7 +15,6 @@ from torchvision import transforms
 
 
 def extract_meta_av(path: str) -> (int, int, int):
-    import av
     try:
         video = av.open(path)
         video_stream = video.streams.video[0]
@@ -54,29 +54,21 @@ def adapt_bb(frame_height: int, frame_width: int, bb_height: int, bb_width: int,
     return new_left, new_top, new_right, new_bottom
 
 
-def extract_bb(frame: Image.Image, bb: Iterable, scale: str, size: int) -> Image.Image:
+def extract_bb(frame: Image.Image, bb: Iterable, size: int) -> Image.Image:
     left, top, right, bottom = bb
-    if scale == "scale":
-        bb_width = int(right) - int(left)
-        bb_height = int(bottom) - int(top)
-        bb_to_desired_ratio = min(size / bb_height, size / bb_width) if (bb_width > 0 and bb_height > 0) else 1.
-        bb_width = int(size / bb_to_desired_ratio)
-        bb_height = int(size / bb_to_desired_ratio)
-        left, top, right, bottom = adapt_bb(frame.height, frame.width, bb_height, bb_width, left, top, right,
-                                            bottom)
-        face = frame.crop((left, top, right, bottom)).resize((size, size), Image.BILINEAR)
-    elif scale == "crop":
-        # Find the center of the bounding box and cut an area around it of height x width
-        left, top, right, bottom = adapt_bb(frame.height, frame.width, size, size, left, top, right,
-                                            bottom)
-        face = frame.crop((left, top, right, bottom))
-    elif scale == "tight":
-        left, top, right, bottom = adapt_bb(frame.height, frame.width, bottom - top, right - left, left, top, right,
-                                            bottom)
-        face = frame.crop((left, top, right, bottom))
-    else:
-        raise ValueError('Unknown scale value: {}'.format(scale))
 
+    # Scale policy (duy nhất)
+    bb_width = int(right) - int(left)
+    bb_height = int(bottom) - int(top)
+    bb_to_desired_ratio = min(size / bb_height, size / bb_width) if (bb_width > 0 and bb_height > 0) else 1.
+    bb_width = int(size / bb_to_desired_ratio)
+    bb_height = int(size / bb_to_desired_ratio)
+
+    left, top, right, bottom = adapt_bb(
+        frame.height, frame.width, bb_height, bb_width, left, top, right, bottom
+    )
+
+    face = frame.crop((left, top, right, bottom)).resize((size, size), Image.BILINEAR)
     return face
 
 
@@ -91,52 +83,27 @@ def showimage(img_tensor: torch.Tensor):
     plt.show()
 
 
-def make_train_tag(net_class: nn.Module,
-                   face_policy: str,
-                   patch_size: int,
-                   traindb: List[str],
-                   seed: int,
-                   suffix: str,
-                   debug: bool,
-                   ):
-    # Training parameters and tag
-    tag_params = dict(net=net_class.__name__,
-                      traindb='-'.join(traindb),
-                      face=face_policy,
-                      size=patch_size,
-                      seed=seed
-                      )
+def make_train_tag(net_class: nn.Module, patch_size: int, traindb: List[str],
+                   seed: int, suffix: str, debug: bool):
+    tag_params = dict(net=net_class.__name__, traindb='-'.join(traindb), size=patch_size, seed=seed)
     print('Parameters')
     pprint(tag_params)
+
     tag = 'debug_' if debug else ''
     tag += '_'.join(['-'.join([key, str(tag_params[key])]) for key in tag_params])
+
     if suffix is not None:
         tag += '_' + suffix
+
     print('Tag: {:s}'.format(tag))
     return tag
 
-
-def get_transformer(face_policy: str, patch_size: int, net_normalizer: transforms.Normalize, train: bool):
-    import albumentations as A
-    from albumentations.pytorch import ToTensorV2
-    import cv2
-
-    if face_policy == 'scale':
-        loading_transformations = [
-            A.PadIfNeeded(min_height=patch_size, min_width=patch_size,
-                          border_mode=cv2.BORDER_CONSTANT, value=0, always_apply=True),
-            A.Resize(height=patch_size, width=patch_size, always_apply=True),
+def get_transformer(patch_size: int, net_normalizer: transforms.Normalize, train: bool):
+    loading_transformations = [
+        A.PadIfNeeded(min_height=patch_size, min_width=patch_size,
+                      border_mode=cv2.BORDER_CONSTANT, value=0, always_apply=True),
+        A.Resize(height=patch_size, width=patch_size, always_apply=True),
         ]
-    elif face_policy == 'tight':
-        loading_transformations = [
-            A.LongestMaxSize(max_size=patch_size, always_apply=True),
-            A.PadIfNeeded(min_height=patch_size, min_width=patch_size,
-                          border_mode=cv2.BORDER_CONSTANT, value=0, always_apply=True),
-        ]
-    else:
-        raise ValueError(f"Unknown face_policy: {face_policy}")
-
-    downsample_train_transformations = []
 
     if train:
         aug_transformations = [
@@ -155,9 +122,7 @@ def get_transformer(face_policy: str, patch_size: int, net_normalizer: transform
         ToTensorV2()
     ]
 
-    return A.Compose(
-        loading_transformations + downsample_train_transformations + aug_transformations + final_transformations
-    )
+    return A.Compose(loading_transformations + aug_transformations + final_transformations)
 
 def aggregate(x, deadzone: float, pre_mult: float, policy: str, post_mult: float, clipmargin: float, params={}):
     x = x.copy()

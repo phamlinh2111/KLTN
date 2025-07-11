@@ -17,7 +17,6 @@ class FeatureExtractor(nn.Module):
     def get_normalizer():
         return transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 
-
 class EfficientNetGen(FeatureExtractor):
     def __init__(self, model: str):
         super(EfficientNetGen, self).__init__()
@@ -38,102 +37,9 @@ class EfficientNetGen(FeatureExtractor):
         x = self.classifier(x)
         return x
 
-
 class EfficientNetB4(EfficientNetGen):
     def __init__(self):
         super(EfficientNetB4, self).__init__(model='efficientnet-b4')
-
-class EfficientNetAutoAtt(EfficientNet):
-    def init_att(self, model: str, width: int):
-        if model == 'efficientnet-b4':
-            self.att_block_idx = 9
-
-            in_channels = self._blocks[self.att_block_idx]._project_conv.out_channels
-            if width == 0:
-                self.attconv = nn.Sequential(
-                    nn.Conv2d(in_channels, 1, kernel_size=1),
-                    nn.Sigmoid()
-                )
-            else:
-                attconv_layers = []
-                for i in range(width):
-                    attconv_layers.append(
-                        (f'conv{i}', nn.Conv2d(in_channels, in_channels, kernel_size=3, padding=1))
-                    )
-                    attconv_layers.append(
-                        (f'relu{i}', nn.ReLU(inplace=True))
-                    )
-                attconv_layers.append(('conv_out', nn.Conv2d(in_channels, 1, kernel_size=1)))
-                attconv_layers.append(('sigmoid', nn.Sigmoid()))
-                self.attconv = nn.Sequential(OrderedDict(attconv_layers))
-        else:
-            raise ValueError(f'Model not valid: {model}')
-
-    def get_attention(self, x: torch.Tensor) -> torch.Tensor:
-        att = None
-        x = self._swish(self._bn0(self._conv_stem(x)))
-
-        for idx, block in enumerate(self._blocks):
-            drop_connect_rate = self._global_params.drop_connect_rate
-            if drop_connect_rate:
-                drop_connect_rate *= float(idx) / len(self._blocks)
-            x = block(x, drop_connect_rate=drop_connect_rate)
-
-            if idx == self.att_block_idx:
-                att = self.attconv(x)
-                break
-
-        return att
-
-    def extract_features(self, x: torch.Tensor) -> torch.Tensor:
-        # Stem
-        x = self._swish(self._bn0(self._conv_stem(x)))
-
-        # Blocks
-        for idx, block in enumerate(self._blocks):
-            drop_connect_rate = self._global_params.drop_connect_rate
-            if drop_connect_rate:
-                drop_connect_rate *= float(idx) / len(self._blocks)
-            x = block(x, drop_connect_rate=drop_connect_rate)
-            if idx == self.att_block_idx:
-                att = torch.sigmoid(self.attconv(x))
-                x = x * att
-
-        # Head
-        x = self._swish(self._bn1(self._conv_head(x)))
-
-        return x
-
-
-class EfficientNetGenAutoAtt(FeatureExtractor):
-    def __init__(self, model: str, width: int):
-        super(EfficientNetGenAutoAtt, self).__init__()
-
-        self.efficientnet = EfficientNetAutoAtt.from_pretrained(model)
-        self.efficientnet.init_att(model, width)
-        self.classifier = nn.Linear(self.efficientnet._conv_head.out_channels, 1)
-        del self.efficientnet._fc
-
-    def features(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.efficientnet.extract_features(x)
-        x = self.efficientnet._avg_pooling(x)
-        x = x.flatten(start_dim=1)
-        return x
-
-    def forward(self, x):
-        x = self.features(x)
-        x = self.efficientnet._dropout(x)
-        x = self.classifier(x)
-        return x
-
-    def get_attention(self, x: torch.Tensor) -> torch.Tensor:
-        return self.efficientnet.get_attention(x)
-
-
-class EfficientNetAutoAttB4(EfficientNetGenAutoAtt):
-    def __init__(self):
-        super(EfficientNetAutoAttB4, self).__init__(model='efficientnet-b4', width=0)
-
 class SiameseTuning(FeatureExtractor):
     def __init__(self, feat_ext: FeatureExtractor, num_feat: int, lastonly: bool = True):
         super(SiameseTuning, self).__init__()
@@ -169,8 +75,3 @@ class SiameseTuning(FeatureExtractor):
 class EfficientNetB4ST(SiameseTuning):
     def __init__(self):
         super(EfficientNetB4ST, self).__init__(feat_ext=EfficientNetB4, num_feat=1792, lastonly=True)
-
-
-class EfficientNetAutoAttB4ST(SiameseTuning):
-    def __init__(self):
-        super(EfficientNetAutoAttB4ST, self).__init__(feat_ext=EfficientNetAutoAttB4, num_feat=1792, lastonly=True)

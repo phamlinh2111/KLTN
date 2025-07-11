@@ -65,7 +65,6 @@ def main():
     ffpp_df_path = args.ffpp_faces_df_path
     ffpp_faces_dir = args.ffpp_faces_dir
 
-    face_policy = str(model_path).split('face-')[1].split('_')[0]
     patch_size = int(str(model_path).split('size-')[1].split('_')[0])
     net_name = str(model_path).split('net-')[1].split('_')[0]
     model_name = '_'.join(model_path.with_suffix('').parts[-2:])
@@ -86,7 +85,7 @@ def main():
     print('Model loaded.')
 
     # Transformer
-    test_transformer = utils.get_transformer(face_policy, patch_size, net.get_normalizer(), train=False)
+    test_transformer = utils.get_transformer(patch_size, net.get_normalizer(), train=False)
 
     print('Loading data...')
     if ffpp_df_path is None or ffpp_faces_dir is None:
@@ -136,7 +135,7 @@ def main():
             print(f'Fake videos: {df[df["label"] == True]["video"].nunique()}')
 
             result = process_dataset(df=df, root=df_root, net=net, criterion=nn.BCEWithLogitsLoss(reduction='none'),
-                                     patch_size=patch_size, face_policy=face_policy, transformer=test_transformer,
+                                     patch_size=patch_size, transformer=test_transformer,
                                      batch_size=batch_size, num_workers=num_workers, device=device)
 
             df['score'] = result['score'].astype(np.float32)
@@ -161,9 +160,9 @@ def main():
 
 
 def process_dataset(df: pd.DataFrame, root: str, net: FeatureExtractor, criterion,
-                    patch_size: int, face_policy: str, transformer: A.BasicTransform,
+                    patch_size: int, transformer: A.BasicTransform,
                     batch_size: int, num_workers: int, device: torch.device) -> dict:
-    dataset = FrameFaceDatasetTest(root=root, df=df, size=patch_size, scale=face_policy, transformer=transformer)
+    dataset = FrameFaceDatasetTest(root=root, df=df, size=patch_size, transformer=transformer)
 
     score = np.zeros(len(df))
     loss = np.zeros(len(df))

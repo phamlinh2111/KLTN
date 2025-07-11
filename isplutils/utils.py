@@ -57,7 +57,6 @@ def adapt_bb(frame_height: int, frame_width: int, bb_height: int, bb_width: int,
 def extract_bb(frame: Image.Image, bb: Iterable, size: int) -> Image.Image:
     left, top, right, bottom = bb
 
-    # Scale policy (duy nhất)
     bb_width = int(right) - int(left)
     bb_height = int(bottom) - int(top)
     bb_to_desired_ratio = min(size / bb_height, size / bb_width) if (bb_width > 0 and bb_height > 0) else 1.

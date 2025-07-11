@@ -10,20 +10,11 @@ from blazeface import BlazeFace
 
 
 class FaceExtractor:
-    """Wrapper for face extraction workflow."""
-
     def __init__(self, video_read_fn = None, facedet: BlazeFace = None):
         self.video_read_fn = video_read_fn
         self.facedet = facedet
 
     def process_image(self, path: str = None, img: Image.Image or np.ndarray = None) -> dict:
-        
-        """
-        Process a single image
-        :param path: Path to the image
-        :param img: image
-        """
-
         if img is not None and path is not None:
             raise ValueError('Only one argument between path and img can be specified')
         if img is None and path is None:
@@ -36,30 +27,17 @@ class FaceExtractor:
         else:
             img = np.asarray(img)
 
-        # Split the frames into several tiles. Resize the tiles to 128x128.
         tiles, resize_info = self._tile_frames(np.expand_dims(img, 0), target_size)
-        # tiles has shape (num_tiles, target_size, target_size, 3)
-        # resize_info is a list of four elements [resize_factor_y, resize_factor_x, 0, 0]
-
-        # Run the face detector. The result is a list of PyTorch tensors,
-        # one for each tile in the batch.
         detections = self.facedet.predict_on_batch(tiles, apply_nms=False)
 
-        # Convert the detections from 128x128 back to the original frame size.
         detections = self._resize_detections(detections, target_size, resize_info)
 
-        # Because we have several tiles for each frame, combine the predictions
-        # from these tiles. The result is a list of PyTorch tensors, but now one
-        # for each frame (rather than each tile).
         num_frames = 1
         frame_size = (img.shape[1], img.shape[0])
         detections = self._untile_detections(num_frames, frame_size, detections)
 
-        # The same face may have been detected in multiple tiles, so filter out
-        # overlapping detections. This is done separately for each frame.
         detections = self.facedet.nms(detections)
 
-        # Crop the faces out of the original frame.
         frameref_detections = self._add_margin_to_detections(detections[0], frame_size, 0.2)
         faces = self._crop_faces(img, frameref_detections)
         kpts = self._crop_kpts(img, detections[0], 0.3)
@@ -93,34 +71,6 @@ class FaceExtractor:
         return frame_dict
 
     def process_videos(self, input_dir, filenames, video_idxs) -> List[dict]:
-        """For the specified selection of videos, grabs one or more frames
-        from each video, runs the face detector, and tries to find the faces
-        in each frame.
-
-        The frames are split into tiles, and the tiles from the different videos
-        are concatenated into a single batch. This means the face detector gets
-        a batch of size len(video_idxs) * num_frames * num_tiles (usually 3).
-
-        Arguments:
-            input_dir: base folder where the video files are stored
-            filenames: list of all video files in the input_dir
-            video_idxs: one or more indices from the filenames list; these
-                are the videos we'll actually process
-
-        Returns a list of dictionaries, one for each frame read from each video.
-
-        This dictionary contains:
-            - video_idx: the video this frame was taken from
-            - frame_idx: the index of the frame in the video
-            - frame_w, frame_h: original dimensions of the frame
-            - faces: a list containing zero or more NumPy arrays with a face crop
-            - scores: a list array with the confidence score for each face crop
-
-        If reading a video failed for some reason, it will not appear in the
-        output array. Note that there's no guarantee a given video will actually
-        have num_frames results (as soon as a reading problem is encountered for
-        a video, we continue with the next video).
-        """
         target_size = self.facedet.input_size
 
         videos_read = []
@@ -163,33 +113,23 @@ class FaceExtractor:
         result = []
         offs = 0
         for v in range(len(tiles)):
-            # Not all videos may have the same number of tiles, so find which
-            # detections go with which video.
             num_tiles = tiles[v].shape[0]
             detections = all_detections[offs:offs + num_tiles]
             offs += num_tiles
 
-            # Convert the detections from 128x128 back to the original frame size.
             detections = self._resize_detections(detections, target_size, resize_info[v])
 
-            # Because we have several tiles for each frame, combine the predictions
-            # from these tiles. The result is a list of PyTorch tensors, but now one
-            # for each frame (rather than each tile).
             num_frames = frames[v].shape[0]
             frame_size = (frames[v].shape[2], frames[v].shape[1])
             detections = self._untile_detections(num_frames, frame_size, detections)
 
-            # The same face may have been detected in multiple tiles, so filter out
-            # overlapping detections. This is done separately for each frame.
             detections = self.facedet.nms(detections)
 
             for i in range(len(detections)):
-                # Crop the faces out of the original frame.
                 frameref_detections = self._add_margin_to_detections(detections[i], frame_size, 0.2)
                 faces = self._crop_faces(frames[v][i], frameref_detections)
                 kpts = self._crop_kpts(frames[v][i], detections[i], 0.3)
 
-                # Add additional information about the frame and detections.
                 scores = list(detections[i][:, 16].cpu().numpy())
                 frame_dict = {"video_idx": videos_read[v],
                               "frame_idx": frames_read[v][i],
@@ -201,7 +141,6 @@ class FaceExtractor:
                               "detections": frameref_detections.cpu().numpy(),
                               "scores": scores,
                               }
-                # Sort faces by descending confidence
                 frame_dict = self._soft_faces_by_descending_score(frame_dict)
 
                 result.append(frame_dict)
@@ -209,7 +148,6 @@ class FaceExtractor:
         return result
 
     def process_video(self, video_path):
-        """Convenience method for doing face extraction on a single video."""
         input_dir = os.path.dirname(video_path)
         filenames = [os.path.basename(video_path)]
         return self.process_videos(input_dir, filenames, [0])
@@ -245,14 +183,6 @@ class FaceExtractor:
         return num_h, num_v, split_size, x_step, y_step
 
     def _resize_detections(self, detections, target_size, resize_info):
-        """Converts a list of face detections back to the original
-        coordinate system.
-
-        Arguments:
-            detections: a list containing PyTorch tensors of shape (num_faces, 17)
-            target_size: (width, height)
-            resize_info: [scale_w, scale_h, offset_x, offset_y]
-        """
         projected = []
         target_w, target_h = target_size
         scale_w, scale_h, offset_x, offset_y = resize_info
@@ -276,10 +206,6 @@ class FaceExtractor:
 
     def _untile_detections(self, num_frames: int, frame_size: Tuple[int, int], detections: List[torch.Tensor]) -> List[
         torch.Tensor]:
-        """With N tiles per frame, there also are N times as many detections.
-        This function groups together the detections for a given frame; it is
-        the complement to tile_frames().
-        """
         combined_detections = []
 
         W, H = frame_size
@@ -314,18 +240,6 @@ class FaceExtractor:
 
     def _add_margin_to_detections(self, detections: torch.Tensor, frame_size: Tuple[int, int],
                                   margin: float = 0.2) -> torch.Tensor:
-        """Expands the face bounding box.
-
-        NOTE: The face detections often do not include the forehead, which
-        is why we use twice the margin for ymin.
-
-        Arguments:
-            detections: a PyTorch tensor of shape (num_detections, 17)
-            frame_size: maximum (width, height)
-            margin: a percentage of the bounding box's height
-
-        Returns a PyTorch tensor of shape (num_detections, 17).
-        """
         offset = torch.round(margin * (detections[:, 2] - detections[:, 0]))
         detections = detections.clone()
         detections[:, 0] = torch.clamp(detections[:, 0] - offset * 2, min=0)  # ymin
@@ -335,16 +249,6 @@ class FaceExtractor:
         return detections
 
     def _crop_faces(self, frame: np.ndarray, detections: torch.Tensor) -> List[np.ndarray]:
-        """Copies the face region(s) from the given frame into a set
-        of new NumPy arrays.
-
-        Arguments:
-            frame: a NumPy array of shape (H, W, 3)
-            detections: a PyTorch tensor of shape (num_detections, 17)
-
-        Returns a list of NumPy arrays, one for each face crop. If there
-        are no faces detected for this frame, returns an empty list.
-        """
         faces = []
         for i in range(len(detections)):
             ymin, xmin, ymax, xmax = detections[i, :4].cpu().numpy().astype(int)
@@ -353,17 +257,6 @@ class FaceExtractor:
         return faces
 
     def _crop_kpts(self, frame: np.ndarray, detections: torch.Tensor, face_fraction: float):
-        """Copies the parts region(s) from the given frame into a set
-        of new NumPy arrays.
-
-        Arguments:
-            frame: a NumPy array of shape (H, W, 3)
-            detections: a PyTorch tensor of shape (num_detections, 17)
-            face_fraction: float between 0 and 1 indicating how big are the parts to be extracted w.r.t the whole face
-
-        Returns a list of NumPy arrays, one for each face crop. If there
-        are no faces detected for this frame, returns an empty list.
-        """
         faces = []
         for i in range(len(detections)):
             kpts = []
@@ -377,16 +270,6 @@ class FaceExtractor:
         return faces
 
     def remove_large_crops(self, crops, pct=0.1):
-        """Removes faces from the results if they take up more than X%
-        of the video. Such a face is likely a false positive.
-
-        This is an optional postprocessing step. Modifies the original
-        data structure.
-
-        Arguments:
-            crops: a list of dictionaries with face crop data
-            pct: maximum portion of the frame a crop may take up
-        """
         for i in range(len(crops)):
             frame_data = crops[i]
             video_area = frame_data["frame_w"] * frame_data["frame_h"]
@@ -405,26 +288,9 @@ class FaceExtractor:
             frame_data["scores"] = new_scores
 
     def keep_only_best_face(self, crops):
-        """For each frame, only keeps the face with the highest confidence.
-
-        This gets rid of false positives, but obviously is problematic for
-        videos with two people!
-
-        This is an optional postprocessing step. Modifies the original
-        data structure.
-        """
         for i in range(len(crops)):
             frame_data = crops[i]
             if len(frame_data["faces"]) > 0:
                 frame_data["faces"] = frame_data["faces"][:1]
                 frame_data["scores"] = frame_data["scores"][:1]
 
-    # TODO: def filter_likely_false_positives(self, crops):
-    #   if only some frames have more than 1 face, it's likely a false positive
-    #   if most frames have more than 1 face, it's probably two people
-    #   so find the % of frames with > 1 face; if > 0.X, keep the two best faces
-
-    # TODO: def filter_by_score(self, crops, min_score) to remove any
-    # crops with a confidence score lower than min_score
-
-    # TODO: def sort_by_histogram(self, crops) for videos with 2 people.

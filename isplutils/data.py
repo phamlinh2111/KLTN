@@ -14,13 +14,9 @@ from .utils import extract_bb
 
 def load_face(record: pd.Series, root: str, size: int, transformer: A.BasicTransform) -> torch.Tensor: 
     path = os.path.join(str(root), str(record.name))
-    
-    # Dùng autocache nếu ảnh nhỏ
+
     autocache = size < 256
-
-    # Đường dẫn file cache
     cached_path = str(Path(root).joinpath('autocache', str(size), str(record.name)).with_suffix('.jpg'))
-
     face = np.zeros((size, size, 3), dtype=np.uint8)
 
     if os.path.exists(cached_path):

@@ -82,19 +82,19 @@ def showimage(img_tensor: torch.Tensor):
     plt.show()
 
 
-def make_train_tag(net_class: nn.Module, patch_size: int, traindb: List[str],
-                   seed: int, suffix: str, debug: bool):
-    tag_params = dict(net=net_class.__name__, traindb='-'.join(traindb), size=patch_size, seed=seed)
+def make_train_tag(net_class: nn.Module, patch_size: int, traindb: List[str], seed: int):
+    tag_params = dict(
+        net=net_class.__name__,
+        traindb='-'.join(traindb),
+        size=patch_size,
+        seed=seed
+    )
+
     print('Parameters')
     pprint(tag_params)
 
-    tag = 'debug_' if debug else ''
-    tag += '_'.join(['-'.join([key, str(tag_params[key])]) for key in tag_params])
-
-    if suffix is not None:
-        tag += '_' + suffix
-
-    print('Tag: {:s}'.format(tag))
+    tag = '_'.join([f'{key}_{tag_params[key]}' for key in tag_params])
+    print('Tag:', tag)
     return tag
 
 def get_transformer(patch_size: int, net_normalizer: transforms.Normalize, train: bool):

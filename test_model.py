@@ -128,7 +128,7 @@ def main():
     # Run prediction
     for df, df_path, df_root, tag in extr_list:
         if override or not df_path.exists():
-            print(f'\n##### PREDICT VIDEOS FROM {tag} #####')
+            print(f'\n##### PREDICT VIDEOS #####')
             print(f'Real frames: {sum(df["label"] == False)}')
             print(f'Fake frames: {sum(df["label"] == True)}')
             print(f'Real videos: {df[df["label"] == False]["video"].nunique()}')

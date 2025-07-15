@@ -18,15 +18,10 @@ def get_split_df(df: pd.DataFrame, split: str) -> pd.DataFrame:
         df[(df['source'] == 'youtube') & (df['quality'] == crf)]['video'].unique()
     )
 
-    total = len(random_youtube_videos)
-    train_count = int(0.75 * total)
-    val_count = int(0.15 * total)
-    test_count = total - train_count - val_count  # tránh bị lệch do làm tròn
-
-    train_orig = random_youtube_videos[:train_count]
-    val_orig = random_youtube_videos[train_count:train_count + val_count]
-    test_orig = random_youtube_videos[train_count + val_count:]
-
+    train_orig = random_youtube_videos[:720]
+    val_orig = random_youtube_videos[720:720 + 140]
+    test_orig = random_youtube_videos[720 + 140:]
+    
     if split == 'train':
         split_df = pd.concat((df[df['original'].isin(train_orig)], df[df['video'].isin(train_orig)]), axis=0)
     elif split == 'val':

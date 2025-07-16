@@ -40,8 +40,6 @@ def main():
     parser.add_argument('--ffpp_faces_dir', type=str, action='store',
                         help='Path to the directory containing the faces extracted from the FF++ dataset. '
                              'Required for training/validating on the FF++ dataset.')
-    parser.add_argument('--face', type=str, help='Face crop or scale', required=True,
-                        choices=['scale', 'tight'])
     parser.add_argument('--size', type=int, help='Train patch size', required=True)
 
     parser.add_argument('--batch', type=int, help='Batch size to fit in GPU memory', default=32)
@@ -80,7 +78,6 @@ def main():
     val_datasets = args.valdb
     ffpp_df_path = args.ffpp_faces_df_path
     ffpp_faces_dir = args.ffpp_faces_dir
-    face_policy = args.face
     face_size = args.size
 
     batch_size = args.batch
@@ -130,7 +127,6 @@ def main():
 
     tag = utils.make_train_tag(net_class=net_class,
                                traindb=train_datasets,
-                               face_policy=face_policy,
                                patch_size=face_size,
                                seed=seed,
                                suffix=suffix,
@@ -187,8 +183,7 @@ def main():
             warnings.simplefilter("ignore")
             tb.add_graph(net, [dummy, ], verbose=False)
 
-    transformer = utils.get_transformer(face_policy=face_policy, patch_size=face_size,
-                                        net_normalizer=net.get_normalizer(), train=True)
+    transformer = utils.get_transformer( patch_size=face_size, net_normalizer=net.get_normalizer(), train=True)
 
     # Datasets and data loaders
     print('Loading data')
@@ -204,7 +199,6 @@ def main():
 
     train_dataset = FrameFaceIterableDataset(roots=train_roots,
                                              dfs=train_dfs,
-                                             scale=face_policy,
                                              num_samples=max_train_samples,
                                              transformer=transformer,
                                              size=face_size,
@@ -212,7 +206,6 @@ def main():
 
     val_dataset = FrameFaceIterableDataset(roots=val_roots,
                                            dfs=val_dfs,
-                                           scale=face_policy,
                                            num_samples=max_val_samples,
                                            transformer=transformer,
                                            size=face_size,
@@ -316,8 +309,7 @@ def main():
                     ]:
                         record = df.loc[sample_idx]
 
-                        tb_attention(tb, tag, iteration, net, device, face_size, face_policy,
-                                     transformer, root, record)
+                        tb_attention(tb, tag, iteration, net, device, face_size, transformer, root, record)
 
                 if optimizer.param_groups[0]['lr'] == min_lr:
                     print('Reached minimum learning rate. Stopping.')

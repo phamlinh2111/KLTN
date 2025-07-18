@@ -106,8 +106,7 @@ def get_transformer(patch_size: int, net_normalizer: transforms.Normalize, train
 
     if train:
         aug_transformations = [
-            A.HorizontalFlip(p=0.3), 
-
+            A.HorizontalFlip(p=0.5), 
             A.OneOf([
                 A.RandomBrightnessContrast(brightness_limit=0.05, contrast_limit=0.05, p=0.5),
                 A.HueSaturationValue(hue_shift_limit=3, sat_shift_limit=5, val_shift_limit=5, p=0.5),

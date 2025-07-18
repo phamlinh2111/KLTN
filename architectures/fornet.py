@@ -1,5 +1,3 @@
-from collections import OrderedDict
-
 import torch
 from efficientnet_pytorch import EfficientNet
 from torch import nn as nn
@@ -45,43 +43,3 @@ class EfficientNetB4(EfficientNetGen):
 class EfficientNetB0(EfficientNetGen):
     def __init__(self):
         super(EfficientNetB0, self).__init__(model='efficientnet-b0')        
- 
-class EfficientNetB2(EfficientNetGen):
-    def __init__(self):
-        super(EfficientNetB2, self).__init__(model='efficientnet-b2')
-       
-class SiameseTuning(FeatureExtractor):
-    def __init__(self, feat_ext: FeatureExtractor, num_feat: int, lastonly: bool = True):
-        super(SiameseTuning, self).__init__()
-        self.feat_ext = feat_ext()
-        if not hasattr(self.feat_ext, 'features'):
-            raise NotImplementedError('The provided feature extractor needs to provide a features() method')
-        self.lastonly = lastonly
-        self.classifier = nn.Sequential(
-            nn.BatchNorm1d(num_features=num_feat),
-            nn.Linear(in_features=num_feat, out_features=1),
-        )
-
-    def features(self, x):
-        x = self.feat_ext.features(x)
-        return x
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        if self.lastonly:
-            with torch.no_grad():
-                x = self.features(x)
-        else:
-            x = self.features(x)
-        x = self.classifier(x)
-        return x
-
-    def get_trainable_parameters(self):
-        if self.lastonly:
-            return self.classifier.parameters()
-        else:
-            return self.parameters()
-
-
-class EfficientNetB4ST(SiameseTuning):
-    def __init__(self):
-        super(EfficientNetB4ST, self).__init__(feat_ext=EfficientNetB4, num_feat=1792, lastonly=True)

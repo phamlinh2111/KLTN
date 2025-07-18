@@ -20,7 +20,7 @@ def get_split_df(df: pd.DataFrame, split: str) -> pd.DataFrame:
     total = len(random_youtube_videos)
     n_train = int(0.75 * total)
     n_val = int(0.1 * total)
-    n_test = total - n_train - n_val  # còn lại
+    n_test = total - n_train - n_val  
 
     train_orig = random_youtube_videos[:n_train]
     val_orig = random_youtube_videos[n_train:n_train + n_val]
@@ -36,7 +36,10 @@ def get_split_df(df: pd.DataFrame, split: str) -> pd.DataFrame:
     else:
         raise NotImplementedError(f'Unknown split: {split}')
 
+    
     np.random.set_state(st0)
+    print(f"{split.upper()} set: {split_df['video'].nunique()} unique videos")
+
     return split_df
 
 

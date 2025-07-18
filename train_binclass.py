@@ -117,7 +117,7 @@ def main():
     criterion = nn.BCEWithLogitsLoss()
 
     min_lr = initial_lr * 1e-5
-    optimizer = optim.Adam(net.get_trainable_parameters(), lr=initial_lr)
+    optimizer = torch.optim.Adam(net.get_trainable_parameters(), lr=1e-4, weight_decay=1e-5)
     lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(
         optimizer=optimizer,
         mode='min',

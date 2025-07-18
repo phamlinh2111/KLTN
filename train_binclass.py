@@ -71,6 +71,8 @@ def main():
                         default='weights/binclass/')
 
     args = parser.parse_args()
+    os.environ['AUTOCACHE_DIR'] = '/kaggle/working/autocache'
+    os.makedirs(os.environ['AUTOCACHE_DIR'], exist_ok=True)
 
     # Parse arguments
     net_class = getattr(fornet, args.net)

@@ -17,10 +17,15 @@ def get_split_df(df: pd.DataFrame, split: str) -> pd.DataFrame:
     random_youtube_videos = np.random.permutation(
         df[(df['source'] == 'youtube') & (df['quality'] == crf)]['video'].unique()
     )
+    total = len(random_youtube_videos)
+    n_train = int(0.75 * total)
+    n_val = int(0.1 * total)
+    n_test = total - n_train - n_val  # còn lại
 
-    train_orig = random_youtube_videos[:720]
-    val_orig = random_youtube_videos[720:720 + 140]
-    test_orig = random_youtube_videos[720 + 140:]
+    train_orig = random_youtube_videos[:n_train]
+    val_orig = random_youtube_videos[n_train:n_train + n_val]
+    test_orig = random_youtube_videos[n_train + n_val:]
+
     
     if split == 'train':
         split_df = pd.concat((df[df['original'].isin(train_orig)], df[df['video'].isin(train_orig)]), axis=0)

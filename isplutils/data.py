@@ -16,7 +16,9 @@ def load_face(record: pd.Series, root: str, size: int, transformer: A.BasicTrans
     path = os.path.join(str(root), str(record.name))
 
     autocache = size < 256
-    cached_path = str(Path(root).joinpath('autocache', str(size), str(record.name)).with_suffix('.jpg'))
+    autocache_root = os.environ.get('AUTOCACHE_DIR', os.path.join(root, 'autocache'))
+    cached_path = str(Path(autocache_root).joinpath(str(size), str(record.name)).with_suffix('.jpg'))
+
     face = np.zeros((size, size, 3), dtype=np.uint8)
 
     if os.path.exists(cached_path):

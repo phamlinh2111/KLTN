@@ -22,6 +22,7 @@ class EfficientNetGen(FeatureExtractor):
         super(EfficientNetGen, self).__init__()
 
         self.efficientnet = EfficientNet.from_pretrained(model)
+        self.dropout = nn.Dropout(p=0.3) 
         self.classifier = nn.Linear(self.efficientnet._conv_head.out_channels, 1)
         del self.efficientnet._fc
 
@@ -33,13 +34,22 @@ class EfficientNetGen(FeatureExtractor):
 
     def forward(self, x):
         x = self.features(x)
-        x = self.efficientnet._dropout(x)
+        x = self.dropout(x) 
         x = self.classifier(x)
         return x
 
 class EfficientNetB4(EfficientNetGen):
     def __init__(self):
         super(EfficientNetB4, self).__init__(model='efficientnet-b4')
+        
+class EfficientNetB0(EfficientNetGen):
+    def __init__(self):
+        super(EfficientNetB0, self).__init__(model='efficientnet-b0')        
+ 
+class EfficientNetB2(EfficientNetGen):
+    def __init__(self):
+        super(EfficientNetB2, self).__init__(model='efficientnet-b2')
+       
 class SiameseTuning(FeatureExtractor):
     def __init__(self, feat_ext: FeatureExtractor, num_feat: int, lastonly: bool = True):
         super(SiameseTuning, self).__init__()

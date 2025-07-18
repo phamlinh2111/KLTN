@@ -90,7 +90,7 @@ class FaceExtractor:
 
             videos_read.append(video_idx)
 
-            # Keep track of the original frames (need them later).
+            # Keep track of the original frames.
             my_frames, my_idxs = result
             frames.append(my_frames)
             frames_read.append(my_idxs)
@@ -102,12 +102,8 @@ class FaceExtractor:
 
         if len(tiles) == 0:
             return []
-        # Put all the tiles for all the frames from all the videos into
-        # a single batch.
         batch = np.concatenate(tiles)
 
-        # Run the face detector. The result is a list of PyTorch tensors,
-        # one for each image in the batch.
         all_detections = self.facedet.predict_on_batch(batch, apply_nms=False)
 
         result = []

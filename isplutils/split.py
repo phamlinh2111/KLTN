@@ -39,9 +39,12 @@ def get_split_df(df: pd.DataFrame, split: str) -> pd.DataFrame:
     
     np.random.set_state(st0)
     print(f"{split.upper()} set: {split_df['video'].nunique()} unique videos")
-    real_videos = split_df[split_df['label'] == 0]['video'].nunique()
-    fake_videos = split_df[split_df['label'] == 1]['video'].nunique()
-    print(f"{split.upper()} set: {real_videos} real videos, {fake_videos} fake videos")
+    real_videos = df[df['label'] == 0]['video'].unique()
+    fake_videos = df[df['label'] == 1]['video'].unique()
+
+    print(f"{split.upper()} set: {len(df['video'].unique())} unique videos")
+    print(f"{split.upper()} set: {len(real_videos)} real videos, {len(fake_videos)} fake videos")
+
     return split_df
 
 

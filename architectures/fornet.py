@@ -35,10 +35,6 @@ class EfficientNetGen(FeatureExtractor):
         x = self.dropout(x) 
         x = self.classifier(x)
         return x
-
-class EfficientNetB4(EfficientNetGen):
-    def __init__(self):
-        super(EfficientNetB4, self).__init__(model='efficientnet-b4')
         
 class EfficientNetB0(EfficientNetGen):
     def __init__(self):
